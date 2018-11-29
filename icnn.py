@@ -1,4 +1,4 @@
-from load import load_data
+from loadData import load_data
 import tensorflow as tf
 import numpy as np
 import random
