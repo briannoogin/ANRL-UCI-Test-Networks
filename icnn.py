@@ -25,9 +25,9 @@ weights = {}
 normalize_data = False
 
 # number of variables we consider in each input
-num_vars = 14
+num_vars = 23
 
-iter_ = 90000
+iter_ = 1000
 lr = 1e-1
 batch_size = 32
 
@@ -84,12 +84,12 @@ cost = tf.reduce_mean(tf.square(icnn_out - Y_))
 train = tf.train.AdamOptimizer(lr).minimize(cost)
 
 with tf.Session() as sess:
-    sess.run(tf.initialize_all_variables())
+    sess.run(tf.global_variables_initializer())
     
     print('Data snippit...')
     # load same data as cvx fit
-    x_train, y_train = load_data('air_quality_train', omit=True)
-    x_test, y_test = load_data('air_quality_test', omit=True)
+    x_train, y_train = load_data('mHealth_train.log')
+    x_test, y_test = load_data('mHealth_test.log')
     
     print(x_train[0])
     print(y_train[0])
