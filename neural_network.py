@@ -4,9 +4,10 @@ import numpy as np
 import random
 import sklearn
 from sklearn import preprocessing
+from sklearn.metrics import accuracy_score
 import csv
 
-def fc(x, input_size, output_size, layer_num, softmax=True):
+def addLayer(x, input_size, output_size, layer_num, softmax=True):
     var_name = 'W_' + str(layer_num)
     W = tf.Variable(tf.truncated_normal([input_size, output_size]), name=var_name)
 
@@ -16,30 +17,32 @@ def fc(x, input_size, output_size, layer_num, softmax=True):
     weights[var_name] = W
 
     if softmax:
-        return tf.nn.relu(tf.matmul(x, W) + b)
+        return tf.nn.softmax(tf.matmul(x, W) + b)
     else:
-        return tf.matmul(x, W) + b
+        return tf.nn.relu(tf.matmul(x, W) + b)
 
-def fcnn(input_data, arch):
+def make_network(input_data, arch):
     # first layer
-    nn = fc(x=input_data, 
+    nn = addLayer(x=input_data, 
                     input_size=num_vars, 
                     output_size=arch[0], 
-                    layer_num=1)
+                    layer_num=1,
+                    softmax = False)
 
     # hidden layers
     for layer in range(1, len(arch)):
-        nn = fc(x=nn, 
+        nn = addLayer(x=nn, 
                         input_size=arch[layer-1], 
                         output_size=arch[layer], 
-                        layer_num=layer + 1)
+                        layer_num=layer + 1,
+                        softmax = False)
 
-    # output layer, don't use softmax
-    nn = fc(x=nn, 
+    # output layer
+    nn = addLayer(x=nn, 
                     input_size=arch[len(arch) - 1], 
-                    output_size=1, 
+                    output_size=12, 
                     layer_num='out', 
-                    softmax=False)
+                    softmax=True)
 
     return nn
 
@@ -65,27 +68,23 @@ if __name__ == "__main__":
     save_weights = False
     # number of variables we consider in each input
     num_vars = 23
-
+    num_classes = 12
     iter_ = 1000
     lr = 1e-1
     batch_size = 32
-
-    init = tf.initialize_all_variables()
 
     # input placeholder
     X = tf.placeholder(tf.float32, [None, num_vars])
 
     # y_true
-    Y_ = tf.placeholder(tf.float32, [None, 1])
+    Y_ = tf.placeholder(tf.float32, [None, num_classes])
 
     # entire model
-    icnn_out = fcnn(X, icnn_arch)
+    network_prediction = make_network(X, icnn_arch)
 
-    cost = tf.reduce_mean(tf.square(icnn_out - Y_))
+    #cost = tf.reduce_mean(tf.square(network_prediction - Y_))
+    cost = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(logits=network_prediction, labels=Y_) )
     train = tf.train.AdamOptimizer(lr).minimize(cost)
-
-    # Add ops to save and restore all the variables.
-    saver = tf.train.Saver()
 
     with tf.Session() as sess:
         sess.run(tf.global_variables_initializer())
@@ -127,7 +126,7 @@ if __name__ == "__main__":
     # ======================================================================= #
         # print MSE on entire training set
         print('\nTesting on train-set...')
-        pred = sess.run(icnn_out, feed_dict={X: x_train})
+        pred = sess.run(network_prediction, feed_dict={X: x_train})
         error = []
 
         #print('{0:25} {1}'.format('pred', 'real'))
@@ -137,11 +136,13 @@ if __name__ == "__main__":
 
         print('\nTotal train size: ', len(y_train))
         print('Train mse: ', sum(error) / len(error))
-
+        print("prediction",pred)
+        print("labels",y_train)
+        print("acc",accuracy_score(y_train,pred))
     # ======================================================================== #
         # test on validation set
         print('\nTesting on validation-set...')
-        pred = sess.run(icnn_out, feed_dict={X: x_test})
+        pred = sess.run(network_prediction, feed_dict={X: x_test})
         error = []
 
         #print('{0:25} {1}'.format('pred', 'real'))
