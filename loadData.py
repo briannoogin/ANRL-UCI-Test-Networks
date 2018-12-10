@@ -17,7 +17,7 @@ def load_data(path):
     for index in range(len(data)):
         labels.append(data[index][-1])
         del data[index][-1]
-    return [data,labels]
+    return np.asarray(data),np.asarray(labels)
 def deleteZeros(path):
      f = pd.read_table(path, header=None, delim_whitespace=True)
      f= f[f[23] != 0]
