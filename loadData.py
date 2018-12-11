@@ -1,6 +1,7 @@
 import numpy as np
 import os
 import pandas as pd
+import sys
 
 def load_data(path):
     file = open(path,'r')
@@ -22,6 +23,9 @@ def deleteZeros(path):
      f = pd.read_table(path, header=None, delim_whitespace=True)
      f= f[f[23] != 0]
      np.savetxt(r'mHealth.log', f.values, fmt='%d')
-     print(f[23].value_counts())
+     #dataframe.sort_index(by='count', ascending=[True])
+     print(f[23].value_counts().sort_index(ascending=[True]).tolist())
      return f
-load_data('mHealth.log')
+for i in range(1,11):
+    print("Subject " + str(i))
+    deleteZeros('MHEALTHDATASET/mHealth_subject' + str(i) + '.log')
