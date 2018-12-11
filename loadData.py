@@ -26,6 +26,7 @@ def deleteZeros(path):
      #dataframe.sort_index(by='count', ascending=[True])
      print(f[23].value_counts().sort_index(ascending=[True]).tolist())
      return f
-for i in range(1,11):
-    print("Subject " + str(i))
-    deleteZeros('MHEALTHDATASET/mHealth_subject' + str(i) + '.log')
+if __name__ == "__main__": 
+    for i in range(1,11):
+        print("Subject " + str(i))
+        deleteZeros('MHEALTHDATASET/mHealth_subject' + str(i) + '.log')
