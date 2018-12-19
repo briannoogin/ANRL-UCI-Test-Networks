@@ -30,7 +30,7 @@ if __name__ == "__main__":
     # used to train the model
     training_data, training_labels = load_data('mHealth_train.log')
     # used to select the best model
-    #validation_data, validation_labels = load_data('mHealth_validation.log')
+    validation_data, validation_labels = load_data('mHealth_validation.log')
     # used to test the resulting model
     test_data, test_labels = load_data('mHealth_test.log')
 
@@ -47,23 +47,31 @@ if __name__ == "__main__":
     # define number of classes and variables in the data
     num_vars = len(training_data[0])
     num_classes = 13
-    
-    # create model
-    model = defineModel(num_vars,num_classes)
 
-    # fit model on training data
-    model.fit(training_data,training_labels, epochs=10, batch_size=128)
+    # train 10 models on the same training data and choose the model with the highest validation accuracy 
+    max_acc = -1
+    best_model = None
+    for model_iteration in range(1,11):   
+        # create model
+        model = defineModel(num_vars,num_classes)
+        # fit model on training data
+        model.fit(training_data,training_labels, epochs=10, batch_size=128,verbose=0)
+        # test model on validation data
+        error,accuracy = model.evaluate(validation_data,validation_labels,batch_size=128,verbose=0)
+        if(accuracy > max_acc):
+            max_acc = accuracy
+            best_model = model
+        print("Trained Model", model_iteration)
+        print("Best Accuracy So Far ", max_acc)
 
-    # test model on test data
-    error,accuracy = model.evaluate(test_data,test_labels,batch_size=128)
     # predictions are used to calculate precision and recall
-    model_preds = model.predict_classes(test_data)
+    model_preds = best_model.predict_classes(validation_data)
 
     # report performance measures 
-    precision = precision_score(test_labels,model_preds,average='micro')
-    recall = recall_score(test_labels,model_preds,average='micro')
-    print("Accuracy on test set:", accuracy)
-    print("Precision on test set:",precision)
-    print("Recall on test set:",recall)
+    val_precision = precision_score(validation_labels,model_preds,average='micro')
+    val_recall = recall_score(validation_labels,model_preds,average='micro')
+    print("Accuracy on validation set:", max_acc)
+    print("Precision on validaion set:",val_precision)
+    print("Recall on validation set:",val_recall)
     if save_model:
-        model.save_weights('model_weights.h5')
+        best_model.save_weights('model_weights.h5')
