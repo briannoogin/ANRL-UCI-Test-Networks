@@ -48,10 +48,11 @@ if __name__ == "__main__":
     num_vars = len(training_data[0])
     num_classes = 13
 
-    # train 10 models on the same training data and choose the model with the highest validation accuracy 
+    # train 25 models on the same training data and choose the model with the highest validation accuracy 
     max_acc = -1
     best_model = None
-    for model_iteration in range(1,11):   
+    num_iterations = 25
+    for model_iteration in range(0,num_iterations):   
         # create model
         model = defineModel(num_vars,num_classes)
         # fit model on training data
@@ -61,17 +62,26 @@ if __name__ == "__main__":
         if(accuracy > max_acc):
             max_acc = accuracy
             best_model = model
-        print("Trained Model", model_iteration)
+        print("Trained Model", model_iteration + 1)
         print("Best Accuracy So Far ", max_acc)
 
     # predictions are used to calculate precision and recall
-    model_preds = best_model.predict_classes(validation_data)
-
+    val_model_preds = best_model.predict_classes(validation_data)
+    test_model_preds = best_model.predict_classes(test_data)
     # report performance measures 
-    val_precision = precision_score(validation_labels,model_preds,average='micro')
-    val_recall = recall_score(validation_labels,model_preds,average='micro')
+    val_precision = precision_score(validation_labels,val_model_preds,average='micro')
+    val_recall = recall_score(validation_labels,val_model_preds,average='micro')
+    test_precision = precision_score(test_labels,test_model_preds,average='micro')
+    test_recall = precision_score(test_labels,test_model_preds,average='micro')
+    test_error,test_accuracy = best_model.evaluate(test_data,test_labels,batch_size=128,verbose=0)
+    # print results
+    print()
     print("Accuracy on validation set:", max_acc)
     print("Precision on validaion set:",val_precision)
-    print("Recall on validation set:",val_recall)
+    print("Recall on validation set:",val_recall, '\n')
+
+    print("Accuracy on test set:", test_accuracy)
+    print("Precision on test set:",test_precision)
+    print("Recall on test set:",test_recall)
     if save_model:
         best_model.save_weights('model_weights.h5')
