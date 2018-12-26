@@ -1,5 +1,4 @@
 import numpy as np
-import os
 import pandas as pd
 import sys
 from collections import Counter
@@ -30,12 +29,14 @@ def load_data(path):
 def divide_data():
     path = 'MHEALTHDATASET/mHealth_subject'
     training_data,training_labels = load_data(path + '1' + '.log')
+    print("initial",training_data.shape)
     # make training data
     for subject in range(2,9):
         file_path = path + str(subject) + '.log'
         data,labels = load_data(file_path)
-        np.concatenate((training_data,data),axis=0)
-        np.concatenate((training_labels,labels),axis=0)
+        training_data = np.concatenate((training_data,data),axis=0)
+        training_labels =  np.concatenate((training_labels,labels),axis=0)
+        print("after concatenating",training_data.shape)
 
     # make validation data
     validation_data,validation_labels = load_data(path + '9' + '.log')
@@ -50,8 +51,8 @@ def divide_data():
     test_data = np.column_stack((test_data,test_labels))
 
     np.savetxt("mHealth_train.log", training_data, fmt='%d')
-    np.savetxt("mHealth_validation.log", validation_data, fmt='%d')
-    np.savetxt("mHealth_test.log", test_data, fmt='%d')
+    # np.savetxt("mHealth_validation.log", validation_data, fmt='%d')
+    # np.savetxt("mHealth_test.log", test_data, fmt='%d')
 # deletes all examples with 0 as label
 def deleteZeros(path):
      f = pd.read_table(path, header=None, delim_whitespace=True)
@@ -68,30 +69,27 @@ def deleteZerosForAllFiles():
 # removes examples that are duplicated
 def removeDuplicates():
     # remove duplicates in training file
-    training_data, training_labels = load_data("mHealth_SMOTE_train.log")
-    print(Counter(training_labels))
+    training_data, training_labels = load_data("mHealth_train.log")
     training_data = np.column_stack((training_data,training_labels))
-    train_uniques = np.unique(training_data,axis=0)
-    print(train_uniques)
+    # remove non-unique rows
+    train_uniques = np.vstack({tuple(row) for row in training_data})
     # remove duplicates in validation file
-    validation_data, validation_labels = load_data("mHealth_SMOTE_validation.log")
+    validation_data, validation_labels = load_data("mHealth_validation.log")
     validation_data = np.column_stack((validation_data,validation_labels))
-    validation_uniques = np.unique(validation_data,axis=0)
+    validation_uniques = np.vstack({tuple(row) for row in validation_data})
     # remove duplicates in test file
-    test_data, test_labels = load_data("mHealth_SMOTE_test.log")
+    test_data, test_labels = load_data("mHealth_test.log")
     test_data = np.column_stack((test_data,test_labels))
-    test_uniques = np.unique(test_data,axis=0)
-    print(training_data.shape)
-    print(Counter(training_data[:,23]))
-    # np.savetxt("mHealth_SMOTE_uniques_train.log", train_uniques, fmt='%d')
-    # np.savetxt("mHealth_SMOTE_uniques_validation.log", validation_uniques, fmt='%d')
-    # np.savetxt("mHealth_SMOTE_uniques_test.log", test_uniques, fmt='%d')
+    test_uniques = np.vstack({tuple(row) for row in validation_data})
+    np.savetxt("mHealth_uniques_train.log", train_uniques, fmt='%d')
+    np.savetxt("mHealth_uniques_validation.log", validation_uniques, fmt='%d')
+    np.savetxt("mHealth_uniques_test.log", test_uniques, fmt='%d')
 # oversamples minority cases to achieve a balanced dataset
 def perform_SMOTE():
     # read files
-    training_data, training_labels = load_data("mHealth_train.log")
-    validation_data, validation_labels = load_data("mHealth_validation.log")
-    test_data, test_labels = load_data("mHealth_test.log")
+    training_data, training_labels = load_data("mHealth_uniques_train.log")
+    validation_data, validation_labels = load_data("mHealth_uniques_validation.log")
+    test_data, test_labels = load_data("mHealth_uniques_test.log")
     # perform SMOTE on data
     training_data, training_labels = SMOTE().fit_resample(training_data,training_labels)
     validation_data, validation_labels = SMOTE().fit_resample(validation_data,validation_labels)
@@ -101,12 +99,14 @@ def perform_SMOTE():
     training_data = np.column_stack((training_data,training_labels))
     validation_data = np.column_stack((validation_data,validation_labels))
     test_data = np.column_stack((test_data,test_labels))
+
     # save data
-    np.savetxt("mHealth_SMOTE_train.log", training_data, fmt='%d')
-    np.savetxt("mHealth_SMOTE_validation.log", validation_data, fmt='%d')
-    np.savetxt("mHealth_SMOTE_test.log", test_data, fmt='%d')
+    # np.savetxt("mHealth_SMOTE_uniques_train.log", training_data, fmt='%d')
+    # np.savetxt("mHealth_SMOTE_uniques_validation.log", validation_data, fmt='%d')
+    # np.savetxt("mHealth_SMOTE_uniques_test.log", test_data, fmt='%d')
 if __name__ == "__main__": 
     #deleteZerosForAllFiles()
-    removeDuplicates()
+    #removeDuplicates()
     #perform_SMOTE()
+    divide_data()
     
