@@ -19,8 +19,12 @@ from keras.layers import Dense
 from keras import regularizers
 from keras.utils import plot_model
 from keras.optimizers import SGD
+
+from ann_visualizer.visualize import ann_viz;
+
 import time
 # assumes that the hidden units and the regularization constant are consistent throughout the network
+# returns the baseline_model 
 def define_baseline_model(num_vars,num_classes,hidden_units,regularization):
     model = Sequential()
     # one input layer
@@ -38,10 +42,12 @@ def define_baseline_model(num_vars,num_classes,hidden_units,regularization):
     # one output layer
     model.add(Dense(units=num_classes, activation='softmax'))
     sgd = SGD(lr=0.01, decay=1e-6, momentum=0.9, nesterov=True)
-    model.compile(loss='sparse_categorical_crossentropy', optimizer=sgd, metrics=['accuracy'])
+    model.compile(loss='sparse_categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
     return model
+# returns fixed guard model
 def define_fixedguard_model(num_vars,num_classes,hidden_units,regularization):
     print('hi')
+# returns active guard model
 def define_activeguard_model(num_vars,num_classes,hidden_units,regularization):
     print('hi2')
 # save weights of network 
@@ -52,11 +58,10 @@ def save_weights(model):
 def load_model(input_size, output_size, hidden_units, regularization, weights_path):
     model = define_baseline_model(input_size,output_size,hidden_units,regularization)
     model.load_weights(weights_path)
-    weights = model.get_weights()
-    model = change_weights(model,weights,1)
     return model
 # change the weights of a layer of a model
-def change_weights(model,weights,layer_index):
+def change_weights(model,layer_index):
+    weights = model.get_weights()
     layer_dim= weights[layer_index].shape
     # make numpy of zeros for the layer weight 
     layer = np.zeros(layer_dim)
@@ -66,17 +71,17 @@ def change_weights(model,weights,layer_index):
 # trains and returns the model 
 def train_model(training_data,training_labels,validation_data,validation_labels):
     # variable to save the model
-    save_model = True
+    save_model = False
 
-    # train 10 models on the same training data and choose the model with the highest validation accuracy 
+    # train 5 models on the same training data and choose the model with the highest validation accuracy 
     max_acc = -1
     best_model = None
-    num_iterations = 5
+    num_iterations = 1
     for model_iteration in range(0,num_iterations):   
         # create model
-        model = define_baseline_model(num_vars,num_classes,25,.05)
+        model = define_baseline_model(num_vars,num_classes,100,.01)
         # fit model on training data
-        model.fit(training_data,training_labels, epochs=100, batch_size=128,verbose=0)
+        model.fit(training_data,training_labels, epochs=100, batch_size=128,verbose=0,shuffle = True)
         # test model on validation data
         error,accuracy = model.evaluate(validation_data,validation_labels,batch_size=128,verbose=0)
         if(accuracy > max_acc):
@@ -97,7 +102,7 @@ def train_model(training_data,training_labels,validation_data,validation_labels)
     print("Precision on validation set:",val_precision)
     print("Recall on validation set:",val_recall, '\n')
     if save_model:
-        best_model.save_weights('model_weights.h5')
+        best_model.save_weights('10 layers 100 units .01 reg adam corrected_training model_weights.h5')
     return model
 # returns the test performance measures 
 def test_model(model,test_data,test_labels):
@@ -120,9 +125,10 @@ if __name__ == "__main__":
 
     load_weights = True
     if load_weights:
-        path = '10 layers 100 units .05 regularization 100 epochs model_weights.h5'
-        model = load_model(input_size = num_vars, output_size = num_classes, hidden_units = 100, regularization = .05, weights_path = path)
-        plot_model(model,to_file = "model.png",show_shapes = True)
+        path = '10 layers 50 units .01 reg adam corrected_training model_weights.h5'
+        model = load_model(input_size = num_vars, output_size = num_classes, hidden_units = 50, regularization = .05, weights_path = path)
+        #plot_model(model,to_file = "model.png",show_shapes = True)
+        ann_viz(model, title="Artificial Neural network - Model Visualization")
     else:
         start = time.time()
         model = train_model(training_data,training_labels,validation_data,validation_labels)
