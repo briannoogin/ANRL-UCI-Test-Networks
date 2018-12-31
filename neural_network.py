@@ -22,8 +22,10 @@ from keras.optimizers import SGD
 from keras.models import Model
 from keras.backend import ones
 from keras.backend import zeros
-
+from keras.backend import eval
 from ann_visualizer.visualize import ann_viz;
+
+import tensorflow as tf
 
 import time
 # assumes that the hidden units and the regularization constant are consistent throughout the network
@@ -66,33 +68,39 @@ def define_baseline_functional_model(num_vars,num_classes,hidden_units, regulari
     model = Model(inputs=input_layer, outputs=output_layer)
     model.compile(loss='sparse_categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
     return model
+
 # lambda function to add physical nodes in the network 
-# input: tensors from other layers 
+# input: list of tensors from other layers 
 def add_node_layers(input_tensors):
-    return input_tensors
+    return add([input_tensors[0],input_tensors[1]])
+# lambda function to add the beginning physical node in the network
+# input: one tensor
+def add_first_node_layers(input_tensor):
+    return input_tensor
 # returns fixed guard model with 10 hidden layers
 # f1 = fog node 2 = 1st hidden layer
 # f2 = fog node 2 = 2nd and 3rd hidden layer
 # f3 = fog node 3 = 4th-6th hidden layers
 # c = cloud node = 7th-10th hidden layer and output layer 
 def define_fixedguard_model(num_vars,num_classes,hidden_units,regularization,failures_rates):
+    # define lambda function to add node layers
+    add_layer = Lambda(add_node_layers)
+    add_first_layer = Lambda(add_first_node_layers)
     # one input layer
     input_layer = Input(shape = (num_vars,))
     # 10 hidden layers, 3 fog nodes
     # first fog node
     f1 = Dense(units=hidden_units,activation='relu',kernel_regularizer=regularizers.l2(regularization))(input_layer)
-    #connection_f1f2 = multiply([connection_f1f2,)
-    lambda_layer = Lambda(add_node_layers)
-    connection_f1f2 = lambda_layer([f1])
+    connection_f2 = add_first_layer([f1])
     # second fog node
-    f2 = Dense(units=hidden_units,activation='relu',kernel_regularizer=regularizers.l2(regularization))(connection_f1f2)
+    f2 = Dense(units=hidden_units,activation='relu',kernel_regularizer=regularizers.l2(regularization))(connection_f2)
     f2 = Dense(units=hidden_units,activation='relu',kernel_regularizer=regularizers.l2(regularization))(f2)
-    connection_f2f3 = lambda_layer([f2])
+    connection_f3 = add_layer([f2,f1])
     # third fog node
-    f3 = Dense(units=hidden_units,activation='relu',kernel_regularizer=regularizers.l2(regularization))(connection_f2f3)
+    f3 = Dense(units=hidden_units,activation='relu',kernel_regularizer=regularizers.l2(regularization))(connection_f3)
     f3 = Dense(units=hidden_units,activation='relu',kernel_regularizer=regularizers.l2(regularization))(f3)
     f3 = Dense(units=hidden_units,activation='relu',kernel_regularizer=regularizers.l2(regularization))(f3)
-    connection_f3c = lambda_layer([f3])
+    connection_f3c = add_layer([f3,f2])
     # cloud node
     cloud = Dense(units=hidden_units,activation='relu',kernel_regularizer=regularizers.l2(regularization))(connection_f3c)
     cloud = Dense(units=hidden_units,activation='relu',kernel_regularizer=regularizers.l2(regularization))(cloud)
@@ -236,7 +244,7 @@ if __name__ == "__main__":
     if load_weights:
         path = '10 layers 50 units .01 reg adam corrected_training model_weights.h5'
         model = load_model(input_size = num_vars, output_size = num_classes, hidden_units = 50, regularization = .01, weights_path = path, model_type = 1)
-        #plot_model(model,to_file = "model.png",show_shapes = True)
+        plot_model(model,to_file = "model_with_connections.png",show_shapes = True)
         #ann_viz(model, title="Artificial Neural network - Model Visualization")
     else:
         start = time.time()
