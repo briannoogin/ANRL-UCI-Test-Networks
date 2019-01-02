@@ -15,7 +15,7 @@ from sklearn.preprocessing import StandardScaler
 
 import keras 
 from keras.models import Sequential
-from keras.layers import Dense,Input,add, Lambda
+from keras.layers import Dense,Input,add,multiply,Lambda
 from keras import regularizers
 from keras.utils import plot_model
 from keras.optimizers import SGD
@@ -23,6 +23,7 @@ from keras.models import Model
 from keras.backend import ones
 from keras.backend import zeros
 from keras.backend import eval
+from keras.backend import constant
 from ann_visualizer.visualize import ann_viz;
 
 import tensorflow as tf
@@ -71,38 +72,54 @@ def define_baseline_functional_model(num_vars,num_classes,hidden_units, regulari
 
 # lambda function to add physical nodes in the network 
 # input: list of tensors from other layers 
+# input_tensors[0] = output layer of first node
+# input_tensors[1] = output layer of second node
+# input_tensors[2] = connection weight of node 
+# input_tensors[3] = connection weight of second node
 def add_node_layers(input_tensors):
-    return add([input_tensors[0],input_tensors[1]])
+    first_input = input_tensors[0]
+    second_input = input_tensors[1]
+    return add([first_input,second_input])
+
 # lambda function to add the beginning physical node in the network
 # input: one tensor
 def add_first_node_layers(input_tensor):
-    return input_tensor
+    first_input = input_tensor
+    return first_input
+
 # returns fixed guard model with 10 hidden layers
 # f1 = fog node 2 = 1st hidden layer
 # f2 = fog node 2 = 2nd and 3rd hidden layer
 # f3 = fog node 3 = 4th-6th hidden layers
 # c = cloud node = 7th-10th hidden layer and output layer 
-def define_fixedguard_model(num_vars,num_classes,hidden_units,regularization,failures_rates):
+def define_fixedguard_model(num_vars,num_classes,hidden_units,regularization,failure_rates):
     # define lambda function to add node layers
     add_layer = Lambda(add_node_layers)
     add_first_layer = Lambda(add_first_node_layers)
+    # define lambdas for multiplying node weights by connection weight
+    multiply_weight_layer_f1 = Lambda((lambda x: x * failure_rates[0]))
+    multiply_weight_layer_f2 = Lambda((lambda x: x * failure_rates[1]))
+    multiply_weight_layer_f3 = Lambda((lambda x: x * failure_rates[2]))
     # one input layer
     input_layer = Input(shape = (num_vars,))
     # 10 hidden layers, 3 fog nodes
     # first fog node
     f1 = Dense(units=hidden_units,activation='relu',kernel_regularizer=regularizers.l2(regularization))(input_layer)
-    connection_f2 = add_first_layer([f1])
+    f1 = multiply_weight_layer_f1(f1)
+    connection_f2 = add_first_layer(f1)
     # second fog node
     f2 = Dense(units=hidden_units,activation='relu',kernel_regularizer=regularizers.l2(regularization))(connection_f2)
     f2 = Dense(units=hidden_units,activation='relu',kernel_regularizer=regularizers.l2(regularization))(f2)
-    connection_f3 = add_layer([f2,f1])
+    f2 = multiply_weight_layer_f2(f2)
+    connection_f3 = add_layer([f1,f2])
     # third fog node
     f3 = Dense(units=hidden_units,activation='relu',kernel_regularizer=regularizers.l2(regularization))(connection_f3)
     f3 = Dense(units=hidden_units,activation='relu',kernel_regularizer=regularizers.l2(regularization))(f3)
     f3 = Dense(units=hidden_units,activation='relu',kernel_regularizer=regularizers.l2(regularization))(f3)
-    connection_f3c = add_layer([f3,f2])
+    f3 = multiply_weight_layer_f3(f3)
+    connection_cloud = add_layer([f2,f3])
     # cloud node
-    cloud = Dense(units=hidden_units,activation='relu',kernel_regularizer=regularizers.l2(regularization))(connection_f3c)
+    cloud = Dense(units=hidden_units,activation='relu',kernel_regularizer=regularizers.l2(regularization))(connection_cloud)
     cloud = Dense(units=hidden_units,activation='relu',kernel_regularizer=regularizers.l2(regularization))(cloud)
     cloud = Dense(units=hidden_units,activation='relu',kernel_regularizer=regularizers.l2(regularization))(cloud)
     cloud = Dense(units=hidden_units,activation='relu',kernel_regularizer=regularizers.l2(regularization))(cloud)
@@ -240,7 +257,7 @@ if __name__ == "__main__":
     num_vars = len(training_data[0])
     num_classes = 13
 
-    load_weights = True
+    load_weights = False
     if load_weights:
         path = '10 layers 50 units .01 reg adam corrected_training model_weights.h5'
         model = load_model(input_size = num_vars, output_size = num_classes, hidden_units = 50, regularization = .01, weights_path = path, model_type = 1)
