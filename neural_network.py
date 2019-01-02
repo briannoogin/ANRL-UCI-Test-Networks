@@ -84,7 +84,6 @@ def add_node_layers(input_tensors):
 # input: one tensor
 def add_first_node_layers(input_tensor):
     first_input = input_tensor
-    print(first_input.name)
     return first_input
 
 # returns fixed guard model with 10 hidden layers
@@ -115,7 +114,7 @@ def define_model_with_connections(num_vars,num_classes,hidden_units,regularizati
 
     # 10 hidden layers, 3 fog nodes
     # first fog node
-    f1 = Dense(units=hidden_units,activation='relu',kernel_regularizer=regularizers.l2(regularization),name="fog1_output")(input_layer)
+    f1 = Dense(units=hidden_units,activation='relu',kernel_regularizer=regularizers.l2(regularization),name="fog1_output_layer")(input_layer)
     f1f2 = multiply_weight_layer_f1f2(f1)
     connection_f2 = Lambda(add_first_node_layers,name="F1_F2")(f1f2)
 
@@ -146,10 +145,23 @@ def define_model_with_connections(num_vars,num_classes,hidden_units,regularizati
     model.compile(loss='sparse_categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
     return model
 
-# fails node by making the physical node return NaN
-def fail_node(model,node_index):
-    print(node_index)
-    
+# fails node by making the physical node return 0
+# node_array: bit array, 1 corresponds to alive, 0 corresponds to failure
+def fail_node(model,node_array):
+    # define lambda layer that fails nodes
+    #fail_node_layer = Lambda((lambda x: x * 0))
+    for index,node in enumerate(node_array):
+        # node failed
+        if node == 0:
+            layer_name = "fog" + str(index + 1) + "_output_layer"
+            layer = model.get_layer(name=layer_name)
+            layer_weights = layer.get_weights()
+            # make new weights for the connections
+            new_weights = np.zeros(layer_weights[0].shape)
+            # make new weights for biases
+            new_bias_weights = np.zeros(layer_weights[1].shape)
+            layer.set_weights([new_weights,new_bias_weights])
+
 # save weights of network 
 def save_weights(model):
     weights_name = model.layers() + 'model_weights.h5'
@@ -182,7 +194,7 @@ def print_weights(model):
         print(layer.get_config(),layer.get_weights())
 
 # trains and returns the model 
-def train_model(training_data,training_labels,validation_data,validation_labels):
+def train_model(training_data,training_labels,validation_data,validation_labels,model_number):
     # variable to save the model
     save_model = True
 
@@ -192,7 +204,10 @@ def train_model(training_data,training_labels,validation_data,validation_labels)
     num_iterations = 1
     for model_iteration in range(0,num_iterations):   
         # create model
-        model = define_model_with_connections(num_vars,num_classes,50,.01,[.99,.96,.92])
+        if model_number == 0:
+            model = define_baseline_functional_model(num_vars,num_classes,50,.01)
+        if model_number == 1:
+            model = define_model_with_connections(num_vars,num_classes,50,.01,[.99,.96,.92])
         # fit model on training data
         model.fit(training_data,training_labels, epochs=100, batch_size=128,verbose=1,shuffle = True)
         # test model on validation data
@@ -245,13 +260,14 @@ if __name__ == "__main__":
 
     load_weights = True
     if load_weights:
-        path = '10 layers 100 units .01 reg adam hyperconnections model_weights.h5'
+        path = '10 layers 50 units .01 reg adam hyperconnections model_weights.h5'
         model = load_model(input_size = num_vars, output_size = num_classes, hidden_units = 50, regularization = .01, weights_path = path, model_type = 1)
-        plot_model(model,to_file = "model_with_connections.png",show_shapes = True)
+        fail_node(model,[1,1,0])
+        #plot_model(model,to_file = "model_with_connections.png",show_shapes = True)
         #ann_viz(model, title="Artificial Neural network - Model Visualization")
     else:
         start = time.time()
-        model = train_model(training_data,training_labels,validation_data,validation_labels)
+        model = train_model(training_data,training_labels,validation_data,validation_labels,1)
         end = time.time()
         print("Time elapsed:", end-start)
     test_model(model,validation_data,validation_labels)
