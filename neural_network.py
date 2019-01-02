@@ -74,8 +74,7 @@ def define_baseline_functional_model(num_vars,num_classes,hidden_units, regulari
 # input: list of tensors from other layers 
 # input_tensors[0] = output layer of first node
 # input_tensors[1] = output layer of second node
-# input_tensors[2] = connection weight of node 
-# input_tensors[3] = connection weight of second node
+# returns the sum of the output layers
 def add_node_layers(input_tensors):
     first_input = input_tensors[0]
     second_input = input_tensors[1]
@@ -92,69 +91,59 @@ def add_first_node_layers(input_tensor):
 # f2 = fog node 2 = 2nd and 3rd hidden layer
 # f3 = fog node 3 = 4th-6th hidden layers
 # c = cloud node = 7th-10th hidden layer and output layer 
-def define_fixedguard_model(num_vars,num_classes,hidden_units,regularization,failure_rates):
+def define_model_with_connections(num_vars,num_classes,hidden_units,regularization,survive_rates):
+
     # define lambda function to add node layers
     add_layer = Lambda(add_node_layers)
     add_first_layer = Lambda(add_first_node_layers)
+
+    # calculate connection weights
+    # naming convention:
+    # ex: f1f2 = connection between fog node 1 and fog node 2
+    # ex: f2c = connection between fog node 2 and cloud node
+    connection_weight_f1f2 = 1
+    connection_weight_f1f3 = survive_rates[0] / (survive_rates[0] + survive_rates[1])
+    connection_weight_f2f3 = survive_rates[1] / (survive_rates[0] + survive_rates[1])
+    connection_weight_f2c = survive_rates[1] / (survive_rates[1] + survive_rates[2])
+    connection_weight_f3c = survive_rates[2] / (survive_rates[1] + survive_rates[2])
+
     # define lambdas for multiplying node weights by connection weight
-    multiply_weight_layer_f1 = Lambda((lambda x: x * failure_rates[0]))
-    multiply_weight_layer_f2 = Lambda((lambda x: x * failure_rates[1]))
-    multiply_weight_layer_f3 = Lambda((lambda x: x * failure_rates[2]))
+    multiply_weight_layer_f1f2 = Lambda((lambda x: x * connection_weight_f1f2))
+    multiply_weight_layer_f1f3 = Lambda((lambda x: x * connection_weight_f1f3))
+    multiply_weight_layer_f2f3 = Lambda((lambda x: x * connection_weight_f2f3))
+    multiply_weight_layer_f2c = Lambda((lambda x: x * connection_weight_f2c))
+    multiply_weight_layer_f3c = Lambda((lambda x: x * connection_weight_f3c))
+
     # one input layer
     input_layer = Input(shape = (num_vars,))
     # 10 hidden layers, 3 fog nodes
+
     # first fog node
     f1 = Dense(units=hidden_units,activation='relu',kernel_regularizer=regularizers.l2(regularization))(input_layer)
-    f1 = multiply_weight_layer_f1(f1)
-    connection_f2 = add_first_layer(f1)
+    f1f2 = multiply_weight_layer_f1f2(f1)
+    connection_f2 = add_first_layer(f1f2)
+
     # second fog node
     f2 = Dense(units=hidden_units,activation='relu',kernel_regularizer=regularizers.l2(regularization))(connection_f2)
     f2 = Dense(units=hidden_units,activation='relu',kernel_regularizer=regularizers.l2(regularization))(f2)
-    f2 = multiply_weight_layer_f2(f2)
-    connection_f3 = add_layer([f1,f2])
+    f1f3 = multiply_weight_layer_f1f3(f1)
+    f2f3 = multiply_weight_layer_f2f3(f2)
+    connection_f3 = add_layer([f1f3,f2f3])
+
     # third fog node
     f3 = Dense(units=hidden_units,activation='relu',kernel_regularizer=regularizers.l2(regularization))(connection_f3)
     f3 = Dense(units=hidden_units,activation='relu',kernel_regularizer=regularizers.l2(regularization))(f3)
     f3 = Dense(units=hidden_units,activation='relu',kernel_regularizer=regularizers.l2(regularization))(f3)
-    f3 = multiply_weight_layer_f3(f3)
-    connection_cloud = add_layer([f2,f3])
+    f2c = multiply_weight_layer_f2c(f2)
+    f3c = multiply_weight_layer_f3c(f3)
+    connection_cloud = add_layer([f2c,f3c])
+
     # cloud node
     cloud = Dense(units=hidden_units,activation='relu',kernel_regularizer=regularizers.l2(regularization))(connection_cloud)
     cloud = Dense(units=hidden_units,activation='relu',kernel_regularizer=regularizers.l2(regularization))(cloud)
     cloud = Dense(units=hidden_units,activation='relu',kernel_regularizer=regularizers.l2(regularization))(cloud)
     cloud = Dense(units=hidden_units,activation='relu',kernel_regularizer=regularizers.l2(regularization))(cloud)
-    # one output layer
-    output_layer = Dense(units=num_classes,activation='softmax')(cloud)
-    model = Model(inputs=input_layer, outputs=output_layer)
-    model.compile(loss='sparse_categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
-    return model
 
-# returns active guard model
-def define_activeguard_model(num_vars,num_classes,hidden_units,regularization):
-    # one input layer
-    input_layer = Input(shape = (num_vars,))
-    # 10 hidden layers, 3 fog nodes
-    # first fog node
-    f1 = Dense(units=hidden_units,activation='relu',kernel_regularizer=regularizers.l2(regularization))(input_layer)
-    connection_f1f2 = zeros(f1.shape)
-    #connection_f1f2 = multiply([connection_f1f2,)
-    connection_f1f2 = add([f1,connection_f1f2])
-    # second fog node
-    f2 = Dense(units=hidden_units,activation='relu',kernel_regularizer=regularizers.l2(regularization))(connection_f1f2)
-    f2 = Dense(units=hidden_units,activation='relu',kernel_regularizer=regularizers.l2(regularization))(f2)
-    connection_f2f3 = zeros(f2.shape)
-    connection_f2f3 = add([f2,connection_f2f3])
-    # third fog node
-    f3 = Dense(units=hidden_units,activation='relu',kernel_regularizer=regularizers.l2(regularization))(connection_f2f3)
-    f3 = Dense(units=hidden_units,activation='relu',kernel_regularizer=regularizers.l2(regularization))(f3)
-    f3 = Dense(units=hidden_units,activation='relu',kernel_regularizer=regularizers.l2(regularization))(f3)
-    connection_f3f4 = zeros(f3.shape)
-    connection_f3f4 = add([f3,connection_f3f4])
-    # cloud node
-    cloud = Dense(units=hidden_units,activation='relu',kernel_regularizer=regularizers.l2(regularization))(connection_f3f4)
-    cloud = Dense(units=hidden_units,activation='relu',kernel_regularizer=regularizers.l2(regularization))(cloud)
-    cloud = Dense(units=hidden_units,activation='relu',kernel_regularizer=regularizers.l2(regularization))(cloud)
-    cloud = Dense(units=hidden_units,activation='relu',kernel_regularizer=regularizers.l2(regularization))(cloud)
     # one output layer
     output_layer = Dense(units=num_classes,activation='softmax')(cloud)
     model = Model(inputs=input_layer, outputs=output_layer)
@@ -169,14 +158,11 @@ def save_weights(model):
 # load model from the weights 
 # model type 0 = baseline model
 # model type 1 = fixed guard model
-# model type 2 = active guard model
 def load_model(input_size, output_size, hidden_units, regularization, weights_path,model_type):
     if model_type == 0:
         model = define_baseline_functional_model(input_size,output_size,hidden_units,regularization)
     if model_type == 1:
-        model = define_fixedguard_model(input_size,output_size,hidden_units,regularization,[.99,.96,.92])
-    else:
-        model = define_activeguard_model(input_size,output_size,hidden_units,regularization)
+        model = define_model_with_connections(input_size,output_size,hidden_units,regularization,[.99,.96,.92])
     model.load_weights(weights_path)
     #print_weights(model)
     return model
@@ -257,7 +243,7 @@ if __name__ == "__main__":
     num_vars = len(training_data[0])
     num_classes = 13
 
-    load_weights = False
+    load_weights = True
     if load_weights:
         path = '10 layers 50 units .01 reg adam corrected_training model_weights.h5'
         model = load_model(input_size = num_vars, output_size = num_classes, hidden_units = 50, regularization = .01, weights_path = path, model_type = 1)
