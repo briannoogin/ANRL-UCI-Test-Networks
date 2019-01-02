@@ -84,6 +84,7 @@ def add_node_layers(input_tensors):
 # input: one tensor
 def add_first_node_layers(input_tensor):
     first_input = input_tensor
+    print(first_input.name)
     return first_input
 
 # returns fixed guard model with 10 hidden layers
@@ -92,11 +93,6 @@ def add_first_node_layers(input_tensor):
 # f3 = fog node 3 = 4th-6th hidden layers
 # c = cloud node = 7th-10th hidden layer and output layer 
 def define_model_with_connections(num_vars,num_classes,hidden_units,regularization,survive_rates):
-
-    # define lambda function to add node layers
-    add_layer = Lambda(add_node_layers)
-    add_first_layer = Lambda(add_first_node_layers)
-
     # calculate connection weights
     # naming convention:
     # ex: f1f2 = connection between fog node 1 and fog node 2
@@ -108,48 +104,52 @@ def define_model_with_connections(num_vars,num_classes,hidden_units,regularizati
     connection_weight_f3c = survive_rates[2] / (survive_rates[1] + survive_rates[2])
 
     # define lambdas for multiplying node weights by connection weight
-    multiply_weight_layer_f1f2 = Lambda((lambda x: x * connection_weight_f1f2))
-    multiply_weight_layer_f1f3 = Lambda((lambda x: x * connection_weight_f1f3))
-    multiply_weight_layer_f2f3 = Lambda((lambda x: x * connection_weight_f2f3))
-    multiply_weight_layer_f2c = Lambda((lambda x: x * connection_weight_f2c))
-    multiply_weight_layer_f3c = Lambda((lambda x: x * connection_weight_f3c))
+    multiply_weight_layer_f1f2 = Lambda((lambda x: x * connection_weight_f1f2), name = "connection_weight_f1f2")
+    multiply_weight_layer_f1f3 = Lambda((lambda x: x * connection_weight_f1f3), name = "connection_weight_f1f3")
+    multiply_weight_layer_f2f3 = Lambda((lambda x: x * connection_weight_f2f3), name = "connection_weight_f2f3")
+    multiply_weight_layer_f2c = Lambda((lambda x: x * connection_weight_f2c), name = "connection_weight_f2c")
+    multiply_weight_layer_f3c = Lambda((lambda x: x * connection_weight_f3c), name = "connection_weight_f3c")
 
     # one input layer
     input_layer = Input(shape = (num_vars,))
-    # 10 hidden layers, 3 fog nodes
 
+    # 10 hidden layers, 3 fog nodes
     # first fog node
-    f1 = Dense(units=hidden_units,activation='relu',kernel_regularizer=regularizers.l2(regularization))(input_layer)
+    f1 = Dense(units=hidden_units,activation='relu',kernel_regularizer=regularizers.l2(regularization),name="fog1_output")(input_layer)
     f1f2 = multiply_weight_layer_f1f2(f1)
-    connection_f2 = add_first_layer(f1f2)
+    connection_f2 = Lambda(add_first_node_layers,name="F1_F2")(f1f2)
 
     # second fog node
-    f2 = Dense(units=hidden_units,activation='relu',kernel_regularizer=regularizers.l2(regularization))(connection_f2)
-    f2 = Dense(units=hidden_units,activation='relu',kernel_regularizer=regularizers.l2(regularization))(f2)
+    f2 = Dense(units=hidden_units,activation='relu',kernel_regularizer=regularizers.l2(regularization),name = "fog2_input_layer")(connection_f2)
+    f2 = Dense(units=hidden_units,activation='relu',kernel_regularizer=regularizers.l2(regularization),name="fog2_output_layer")(f2)
     f1f3 = multiply_weight_layer_f1f3(f1)
     f2f3 = multiply_weight_layer_f2f3(f2)
-    connection_f3 = add_layer([f1f3,f2f3])
+    connection_f3 = Lambda(add_node_layers,name="F1F2_F3")([f1f3,f2f3])
 
     # third fog node
-    f3 = Dense(units=hidden_units,activation='relu',kernel_regularizer=regularizers.l2(regularization))(connection_f3)
-    f3 = Dense(units=hidden_units,activation='relu',kernel_regularizer=regularizers.l2(regularization))(f3)
-    f3 = Dense(units=hidden_units,activation='relu',kernel_regularizer=regularizers.l2(regularization))(f3)
+    f3 = Dense(units=hidden_units,activation='relu',kernel_regularizer=regularizers.l2(regularization),name="fog3_input_layer")(connection_f3)
+    f3 = Dense(units=hidden_units,activation='relu',kernel_regularizer=regularizers.l2(regularization),name="fog3_layer_1")(f3)
+    f3 = Dense(units=hidden_units,activation='relu',kernel_regularizer=regularizers.l2(regularization),name="fog3_output_layer")(f3)
     f2c = multiply_weight_layer_f2c(f2)
     f3c = multiply_weight_layer_f3c(f3)
-    connection_cloud = add_layer([f2c,f3c])
+    connection_cloud = Lambda(add_node_layers,name="F2F3_FC")([f2c,f3c])
 
     # cloud node
-    cloud = Dense(units=hidden_units,activation='relu',kernel_regularizer=regularizers.l2(regularization))(connection_cloud)
-    cloud = Dense(units=hidden_units,activation='relu',kernel_regularizer=regularizers.l2(regularization))(cloud)
-    cloud = Dense(units=hidden_units,activation='relu',kernel_regularizer=regularizers.l2(regularization))(cloud)
-    cloud = Dense(units=hidden_units,activation='relu',kernel_regularizer=regularizers.l2(regularization))(cloud)
+    cloud = Dense(units=hidden_units,activation='relu',kernel_regularizer=regularizers.l2(regularization),name="cloud_input_layer")(connection_cloud)
+    cloud = Dense(units=hidden_units,activation='relu',kernel_regularizer=regularizers.l2(regularization),name="cloud_layer_1")(cloud)
+    cloud = Dense(units=hidden_units,activation='relu',kernel_regularizer=regularizers.l2(regularization),name="cloud_layer_2")(cloud)
+    cloud = Dense(units=hidden_units,activation='relu',kernel_regularizer=regularizers.l2(regularization),name="cloud_layer_3")(cloud)
 
     # one output layer
-    output_layer = Dense(units=num_classes,activation='softmax')(cloud)
+    output_layer = Dense(units=num_classes,activation='softmax',name = "output")(cloud)
     model = Model(inputs=input_layer, outputs=output_layer)
     model.compile(loss='sparse_categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
     return model
 
+# fails node by making the physical node return NaN
+def fail_node(model,node_index):
+    print(node_index)
+    
 # save weights of network 
 def save_weights(model):
     weights_name = model.layers() + 'model_weights.h5'
@@ -184,7 +184,7 @@ def print_weights(model):
 # trains and returns the model 
 def train_model(training_data,training_labels,validation_data,validation_labels):
     # variable to save the model
-    save_model = False
+    save_model = True
 
     # train 5 models on the same training data and choose the model with the highest validation accuracy 
     max_acc = -1
@@ -192,9 +192,9 @@ def train_model(training_data,training_labels,validation_data,validation_labels)
     num_iterations = 1
     for model_iteration in range(0,num_iterations):   
         # create model
-        model = define_baseline_functional_model(num_vars,num_classes,50,.01)
+        model = define_model_with_connections(num_vars,num_classes,50,.01,[.99,.96,.92])
         # fit model on training data
-        model.fit(training_data,training_labels, epochs=100, batch_size=128,verbose=0,shuffle = True)
+        model.fit(training_data,training_labels, epochs=100, batch_size=128,verbose=1,shuffle = True)
         # test model on validation data
         error,accuracy = model.evaluate(validation_data,validation_labels,batch_size=128,verbose=0)
         if(accuracy > max_acc):
@@ -215,7 +215,7 @@ def train_model(training_data,training_labels,validation_data,validation_labels)
     print("Precision on validation set:",val_precision)
     print("Recall on validation set:",val_recall, '\n')
     if save_model:
-        best_model.save_weights('normalized data 10 layers 100 units .01 reg adam corrected_training model_weights.h5')
+        best_model.save_weights('10 layers 100 units .01 reg adam hyperconnections model_weights.h5')
     return model
 
 # returns the test performance measures 
@@ -245,7 +245,7 @@ if __name__ == "__main__":
 
     load_weights = True
     if load_weights:
-        path = '10 layers 50 units .01 reg adam corrected_training model_weights.h5'
+        path = '10 layers 100 units .01 reg adam hyperconnections model_weights.h5'
         model = load_model(input_size = num_vars, output_size = num_classes, hidden_units = 50, regularization = .01, weights_path = path, model_type = 1)
         plot_model(model,to_file = "model_with_connections.png",show_shapes = True)
         #ann_viz(model, title="Artificial Neural network - Model Visualization")
