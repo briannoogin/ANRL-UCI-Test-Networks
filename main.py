@@ -43,40 +43,6 @@ def fail_node(model,node_array):
             layer.set_weights([new_weights,new_bias_weights])
             print(layer_name, "was failed")
 
-# load model from the weights 
-# model type 0 = baseline model
-# model type 1 = fixed guard model
-# model type 2 = active guard model 
-def load_model(input_size, output_size, hidden_units, regularization, weights_path,model_type):
-    if model_type == 0:
-        model = define_baseline_functional_model(input_size,output_size,hidden_units,regularization)
-    elif model_type == 1:
-        model = define_model_with_connections(input_size,output_size,hidden_units,regularization,[.99,.96,.92])
-    elif model_type == 2:
-        model = define_active_guard_model_with_connections(input_size,output_size,hidden_units,regularization,[.99,.96,.92])
-    elif model_type == 3:
-        failure_rates = [.92,.96,.99]
-        model = define_model_with_nofogbatchnorm_connections(num_vars,num_classes,50,0,failure_rates)
-    else:
-        raise ValueError("Incorrect model type")
-    model.load_weights(weights_path,by_name=True)
-    #print_weights(model)
-    return model
-
-# change the weights of a layer of a model
-def change_weights(model,layer_index):
-    weights = model.get_weights()
-    layer_dim= weights[layer_index].shape
-    # make numpy of zeros for the layer weight 
-    layer = np.zeros(layer_dim)
-    weights[layer_index] = layer
-    model.set_weights(weights)
-    return model
-
-def print_weights(model):
-    for layer in model.layers: 
-        print(layer.get_config(),layer.get_weights())
-
 # trains and returns the model 
 def train_model(training_data,training_labels,model_type):
     # variable to save the model
@@ -97,7 +63,7 @@ def train_model(training_data,training_labels,model_type):
         elif model_type == 3:
             # survive_rates = [.70,.75,.80]
             # failure_rates = [.3,.25,.20]
-            survive_rates = [.92,.96,.99]
+            survive_rates = [.70,.75,.85]
             model = define_model_with_nofogbatchnorm_connections(num_vars,num_classes,50,0,survive_rates)
         else:
             raise ValueError("Incorrect model type")
@@ -123,7 +89,27 @@ def train_model(training_data,training_labels,model_type):
     if not os.path.exists(path):
         os.mkdir(path)
     if save_model:
-        model.save_weights(path + '/50 units 10 layers with 1 connections and switched survival rates with no fog Batch Norm model' + '.h5')
+        model.save_weights(path + '/50 units 10 layers with 1 connections [.70,.75,.85]' + '.h5')
+    return model
+
+# load model from the weights 
+# model type 0 = baseline model
+# model type 1 = fixed guard model
+# model type 2 = active guard model 
+def load_model(input_size, output_size, hidden_units, regularization, weights_path,model_type):
+    if model_type == 0:
+        model = define_baseline_functional_model(input_size,output_size,hidden_units,regularization)
+    elif model_type == 1:
+        model = define_model_with_connections(input_size,output_size,hidden_units,regularization,[.99,.96,.92])
+    elif model_type == 2:
+        model = define_active_guard_model_with_connections(input_size,output_size,hidden_units,regularization,[.99,.96,.92])
+    elif model_type == 3:
+        failure_rates = [.92,.96,.99]
+        model = define_model_with_nofogbatchnorm_connections(num_vars,num_classes,50,0,failure_rates)
+    else:
+        raise ValueError("Incorrect model type")
+    model.load_weights(weights_path,by_name=True)
+    #print_weights(model)
     return model
 
 # returns the test performance measures 
@@ -153,6 +139,20 @@ def print_layer_output(model,data,layer_name):
         intermediate_output = output_model.predict(data)
         print(intermediate_output)
 
+def evaluate_withFailures(model,test_data,test_labels):
+    failure_list = [
+        [1,1,1], # no failures
+        [1,0,1], # fog node 2 fails
+        [1,1,0], # fog node 3 fails
+    ]
+    # keep track of original weights so it does not get overwritten by fail_node
+    original_weights = model.get_weights()
+    for failure in failure_list:
+        print(failure)
+        fail_node(model,failure)
+        test_model(model,test_data,test_labels,'test')
+        # reset the model with the original weights 
+        model.set_weights(original_weights)
 if __name__ == "__main__":
     # load data
     training_data, training_labels = load_data('mHealth_train.log')
@@ -167,16 +167,12 @@ if __name__ == "__main__":
 
     load_weights = False
     if load_weights:
-        path = 'weights/1-22-2019/50 units 10 layers with inverted connections and switched survival rates with no fog Batch Norm model.h5'
+        path = 'weights/1-23-2019/50 units 10 layers with 2 connections and switched survival rates with no fog Batch Norm model.h5'
         model = load_model(input_size = num_vars, output_size = num_classes, hidden_units = 50, regularization = 0, weights_path = path, model_type = model_type)
-        print("Performance before failing")
-        # test_model(model,test_data,test_labels,'test')
-        fail_node(model,[1,1,0])
         #plot_model(model,to_file = "model_with_ConnectionsAndBatchNorm.png",show_shapes = True)
     else:
         model = train_model(training_data,training_labels,model_type=model_type)
-        #fail_node(model,[1,0,1])
-    test_model(model,test_data,test_labels,'test')
+    evaluate_withFailures(model,test_data,test_labels)
+    #test_model(model,test_data,test_labels,'test')
     #model.summary()
-    #print_layer_output(model,test_data,'F1F2_F3')
   
