@@ -18,9 +18,10 @@ from keras.models import Model
 import keras.backend as K
 import tensorflow as tf
 import datetime
+import os
 
 from ActiveGuard import define_active_guard_model_with_connections
-from FixedGuard import define_model_with_connections
+from FixedGuard import define_model_with_connections, define_model_with_nofogbatchnorm_connections
 from Baseline import define_baseline_functional_model
 
 # fails node by making the physical node return 0
@@ -45,6 +46,7 @@ def fail_node(model,node_array):
 # load model from the weights 
 # model type 0 = baseline model
 # model type 1 = fixed guard model
+# model type 2 = active guard model 
 def load_model(input_size, output_size, hidden_units, regularization, weights_path,model_type):
     if model_type == 0:
         model = define_baseline_functional_model(input_size,output_size,hidden_units,regularization)
@@ -52,6 +54,9 @@ def load_model(input_size, output_size, hidden_units, regularization, weights_pa
         model = define_model_with_connections(input_size,output_size,hidden_units,regularization,[.99,.96,.92])
     elif model_type == 2:
         model = define_active_guard_model_with_connections(input_size,output_size,hidden_units,regularization,[.99,.96,.92])
+    elif model_type == 3:
+        failure_rates = [.92,.96,.99]
+        model = define_model_with_nofogbatchnorm_connections(num_vars,num_classes,50,0,failure_rates)
     else:
         raise ValueError("Incorrect model type")
     model.load_weights(weights_path,by_name=True)
@@ -89,6 +94,11 @@ def train_model(training_data,training_labels,model_type):
             model = define_model_with_connections(num_vars,num_classes,50,0,[.99,.96,.92])
         elif model_type == 2:
             model = define_active_guard_model_with_connections(num_vars,num_classes,10,0,[.99,.96,.92])
+        elif model_type == 3:
+            # survive_rates = [.70,.75,.80]
+            # failure_rates = [.3,.25,.20]
+            survive_rates = [.92,.96,.99]
+            model = define_model_with_nofogbatchnorm_connections(num_vars,num_classes,50,0,survive_rates)
         else:
             raise ValueError("Incorrect model type")
         # fit model on training data
@@ -109,8 +119,11 @@ def train_model(training_data,training_labels,model_type):
 
     now = datetime.datetime.now()
     date = str(now.month) + '-' + str(now.day) + '-' + str(now.year)
+    path = 'weights/' + date
+    if not os.path.exists(path):
+        os.mkdir(path)
     if save_model:
-        model.save_weights(date + '/' + 'weights/' + '50 units 10 layers NO connections with Batch Norm model' + '.h5')
+        model.save_weights(path + '/50 units 10 layers with 1 connections and switched survival rates with no fog Batch Norm model' + '.h5')
     return model
 
 # returns the test performance measures 
@@ -150,17 +163,20 @@ if __name__ == "__main__":
     num_classes = 13
 
     # define model type
-    model_type = 0
+    model_type = 3
 
-    load_weights = True
+    load_weights = False
     if load_weights:
-        path = 'weights/50 units 10 layers NO connections with Batch Norm model-1-21-2019.h5'
+        path = 'weights/1-22-2019/50 units 10 layers with inverted connections and switched survival rates with no fog Batch Norm model.h5'
         model = load_model(input_size = num_vars, output_size = num_classes, hidden_units = 50, regularization = 0, weights_path = path, model_type = model_type)
-        fail_node(model,[1,1,1])
+        print("Performance before failing")
+        # test_model(model,test_data,test_labels,'test')
+        fail_node(model,[1,1,0])
         #plot_model(model,to_file = "model_with_ConnectionsAndBatchNorm.png",show_shapes = True)
     else:
         model = train_model(training_data,training_labels,model_type=model_type)
         #fail_node(model,[1,0,1])
     test_model(model,test_data,test_labels,'test')
-    print_layer_output(model,test_data,'F1F2_F3')
+    #model.summary()
+    #print_layer_output(model,test_data,'F1F2_F3')
   

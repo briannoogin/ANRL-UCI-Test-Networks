@@ -7,10 +7,11 @@ import keras
 # input_tensors[1] = output layer of second node
 # returns the sum of the output layers
 def add_node_layers(input_tensors):
-    first_input = input_tensors[0]
-    second_input = input_tensors[1]
+    output = []
+    for tensors in input_tensors:
+       output.append(tensors)
     # TODO: check for NaNs, used for failure cases
-    return add([first_input,second_input])
+    return add(output)
 
 # lambda function to add the beginning physical node in the network
 # input: one tensor
