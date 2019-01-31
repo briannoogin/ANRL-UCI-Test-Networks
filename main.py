@@ -11,7 +11,6 @@ from sklearn.metrics import accuracy_score
 from sklearn.metrics import recall_score
 from sklearn.metrics import precision_score
 
-
 import keras 
 from keras.utils import plot_model
 from keras.models import Model
@@ -68,7 +67,7 @@ def train_model(training_data,training_labels,model_type):
         else:
             raise ValueError("Incorrect model type")
         # fit model on training data
-        model.fit(training_data,training_labels, epochs=10, batch_size=128,verbose=1,shuffle = True)
+        model.fit(training_data,training_labels, epochs=10, batch_size=32,verbose=1,shuffle = True)
         # # test model on validation data
         # error,accuracy = model.evaluate(validation_data,validation_labels,batch_size=128,verbose=0)
         # if(accuracy > max_acc):
@@ -89,7 +88,7 @@ def train_model(training_data,training_labels,model_type):
     if not os.path.exists(path):
         os.mkdir(path)
     if save_model:
-        model.save_weights(path + '/50 units 10 layers with 1 connections [.70,.75,.85]' + '.h5')
+        model.save_weights(path + '/50 units 10 layers with inverted connections [.70,.75,.85] weights he_normal imputed 0s' + '.h5')
     return model
 
 # load model from the weights 
@@ -104,8 +103,8 @@ def load_model(input_size, output_size, hidden_units, regularization, weights_pa
     elif model_type == 2:
         model = define_active_guard_model_with_connections(input_size,output_size,hidden_units,regularization,[.99,.96,.92])
     elif model_type == 3:
-        failure_rates = [.92,.96,.99]
-        model = define_model_with_nofogbatchnorm_connections(num_vars,num_classes,50,0,failure_rates)
+        failure_rates = [.70,.75,.85]
+        model = define_model_with_nofogbatchnorm_connections(num_vars,num_classes,hidden_units,0,failure_rates)
     else:
         raise ValueError("Incorrect model type")
     model.load_weights(weights_path,by_name=True)
@@ -137,11 +136,18 @@ def print_layer_output(model,data,layer_name):
         layer_output = model.get_layer(name = layer_name).output
         output_model = Model(inputs = model.input,outputs=layer_output)
         intermediate_output = output_model.predict(data)
+        #print(intermediate_output.shape)
         print(intermediate_output)
+        # calculates the number of zeros in the output
+        # used for checking the effects of dropping out nodes
+        non_zeros = np.count_nonzero(intermediate_output)
+        zeros = intermediate_output.size - non_zeros
+        print("Number of zeros in the output:",zeros)
 
 def evaluate_withFailures(model,test_data,test_labels):
     failure_list = [
         [1,1,1], # no failures
+        [0,1,1], # fog node 1 fails
         [1,0,1], # fog node 2 fails
         [1,1,0], # fog node 3 fails
     ]
@@ -153,7 +159,9 @@ def evaluate_withFailures(model,test_data,test_labels):
         test_model(model,test_data,test_labels,'test')
         # reset the model with the original weights 
         model.set_weights(original_weights)
+        
 if __name__ == "__main__":
+    np.set_printoptions(suppress=True)
     # load data
     training_data, training_labels = load_data('mHealth_train.log')
     test_data, test_labels = load_data('mHealth_test.log')
@@ -165,14 +173,18 @@ if __name__ == "__main__":
     # define model type
     model_type = 3
 
-    load_weights = False
+    load_weights = True
     if load_weights:
-        path = 'weights/1-23-2019/50 units 10 layers with 2 connections and switched survival rates with no fog Batch Norm model.h5'
+        path = 'weights/1-31-2019/50 units 10 layers with normal connections [.70,.75,.85] weights he_normal imputed 0s.h5'
         model = load_model(input_size = num_vars, output_size = num_classes, hidden_units = 50, regularization = 0, weights_path = path, model_type = model_type)
         #plot_model(model,to_file = "model_with_ConnectionsAndBatchNorm.png",show_shapes = True)
     else:
         model = train_model(training_data,training_labels,model_type=model_type)
-    evaluate_withFailures(model,test_data,test_labels)
-    #test_model(model,test_data,test_labels,'test')
-    #model.summary()
+    #evaluate_withFailures(model,test_data,test_labels)
+
+    # check if output layer has all zeros
+    print('F1F2_F3 Output')
+    print_layer_output(model,test_data,'F1F2_F3')
+    fail_node(model,[1,0,1])
+    print_layer_output(model,test_data,'F1F2_F3')
   
