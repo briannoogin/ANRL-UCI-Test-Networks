@@ -48,8 +48,6 @@ def train_model(training_data,training_labels,model_type):
     save_model = True
 
     # train 1 model on the same training data and choose the model with the highest validation accuracy 
-    max_acc = -1
-    best_model = None
     num_iterations = 1
     for model_iteration in range(0,num_iterations):   
         # create model
@@ -67,20 +65,7 @@ def train_model(training_data,training_labels,model_type):
         else:
             raise ValueError("Incorrect model type")
         # fit model on training data
-        model.fit(training_data,training_labels, epochs=10, batch_size=32,verbose=1,shuffle = True)
-        # # test model on validation data
-        # error,accuracy = model.evaluate(validation_data,validation_labels,batch_size=128,verbose=0)
-        # if(accuracy > max_acc):
-        #     max_acc = accuracy
-        #     best_model = model
-        print("Trained Model", model_iteration + 1)
-        # print("Best Accuracy So Far ", max_acc)
-
-    # # predictions are used to calculate precision and recall
-    # val_model_preds = predict_classes(best_model,validation_data)
-    # # report performance measures 
-    # val_precision = precision_score(validation_labels,val_model_preds,average='macro')
-    # val_recall = recall_score(validation_labels,val_model_preds,average='macro')
+        model.fit(training_data,training_labels, epochs=25, batch_size=128,verbose=1,shuffle = True)
 
     now = datetime.datetime.now()
     date = str(now.month) + '-' + str(now.day) + '-' + str(now.year)
@@ -88,7 +73,7 @@ def train_model(training_data,training_labels,model_type):
     if not os.path.exists(path):
         os.mkdir(path)
     if save_model:
-        model.save_weights(path + '/50 units 10 layers with inverted connections [.70,.75,.85] weights he_normal imputed 0s' + '.h5')
+        model.save_weights(path + '/50 units 10 layers with normal connections [.70,.75,.85] weights he_normal imputed 0s no batch_norm .25 dropout adam batchnormcloud 25 epochs' + '.h5')
     return model
 
 # load model from the weights 
@@ -173,18 +158,19 @@ if __name__ == "__main__":
     # define model type
     model_type = 3
 
-    load_weights = True
+    load_weights = False
     if load_weights:
-        path = 'weights/1-31-2019/50 units 10 layers with normal connections [.70,.75,.85] weights he_normal imputed 0s.h5'
+        path = 'weights/1-31-2019/50 units 10 layers with regular connections [.70,.75,.85] weights he_normal imputed 0s no batch_norm.h5'
         model = load_model(input_size = num_vars, output_size = num_classes, hidden_units = 50, regularization = 0, weights_path = path, model_type = model_type)
         #plot_model(model,to_file = "model_with_ConnectionsAndBatchNorm.png",show_shapes = True)
     else:
         model = train_model(training_data,training_labels,model_type=model_type)
-    #evaluate_withFailures(model,test_data,test_labels)
+    evaluate_withFailures(model,test_data,test_labels)
 
     # check if output layer has all zeros
-    print('F1F2_F3 Output')
-    print_layer_output(model,test_data,'F1F2_F3')
-    fail_node(model,[1,0,1])
-    print_layer_output(model,test_data,'F1F2_F3')
+    # print('F1F2_F3 Output Before Failure')
+    # print_layer_output(model,test_data,'F1F2_F3')
+    # fail_node(model,[1,0,1])
+    # print('F1F2_F3 Output After Failure')
+    # print_layer_output(model,test_data,'F1F2_F3')
   
