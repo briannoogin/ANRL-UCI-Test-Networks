@@ -10,6 +10,7 @@ import sklearn
 from sklearn.metrics import accuracy_score
 from sklearn.metrics import recall_score
 from sklearn.metrics import precision_score
+from sklearn.model_selection import train_test_split
 
 import keras 
 from keras.utils import plot_model
@@ -20,7 +21,7 @@ import datetime
 import os
 
 from ActiveGuard import define_active_guard_model_with_connections
-from FixedGuard import define_model_with_connections, define_model_with_nofogbatchnorm_connections
+from FixedGuard import define_model_with_connections, define_model_with_nofogbatchnorm_connections, define_model_with_nofogbatchnorm_connections_extrainput
 from Baseline import define_baseline_functional_model
 
 # fails node by making the physical node return 0
@@ -62,6 +63,9 @@ def train_model(training_data,training_labels,model_type):
             # failure_rates = [.3,.25,.20]
             survive_rates = [.70,.75,.85]
             model = define_model_with_nofogbatchnorm_connections(num_vars,num_classes,50,0,survive_rates)
+        elif model_type == 4:
+            survive_rates = [.70,.75,.85]
+            model = define_model_with_nofogbatchnorm_connections_extrainput(num_vars,num_classes,50,0,survive_rates)
         else:
             raise ValueError("Incorrect model type")
         # fit model on training data
@@ -73,7 +77,7 @@ def train_model(training_data,training_labels,model_type):
     if not os.path.exists(path):
         os.mkdir(path)
     if save_model:
-        model.save_weights(path + '/50 units 10 layers with normal connections [.70,.75,.85] weights he_normal imputed 0s no batch_norm .25 dropout adam batchnormcloud 25 epochs' + '.h5')
+        model.save_weights(path + '/50 units 10 layers with normal connections [.70,.75,.85] weights he_normal .1 dropout adam batchnormcloud 25 epochs new split additional_input' + '.h5')
     return model
 
 # load model from the weights 
@@ -148,19 +152,21 @@ def evaluate_withFailures(model,test_data,test_labels):
 if __name__ == "__main__":
     np.set_printoptions(suppress=True)
     # load data
-    training_data, training_labels = load_data('mHealth_train.log')
-    test_data, test_labels = load_data('mHealth_test.log')
-
+    # training_data, training_labels = load_data('mHealth_train.log')
+    # test_data, test_labels = load_data('mHealth_test.log')
+    data,labels= load_data('mHealth_complete.log')
+    training_data, test_data, training_labels, test_labels = train_test_split(data,labels,random_state = 7, test_size = .3)
+    print(labels.shape)
     # define number of classes and variables in the data
     num_vars = len(training_data[0])
     num_classes = 13
 
     # define model type
-    model_type = 3
+    model_type = 4
 
     load_weights = False
     if load_weights:
-        path = 'weights/1-31-2019/50 units 10 layers with regular connections [.70,.75,.85] weights he_normal imputed 0s no batch_norm.h5'
+        path = 'weights/1-31-2019/50 units 10 layers with normal connections [.70,.75,.85] weights he_normal imputed 0s no batch_norm .1 dropout adam batchnormcloud 25 epochs.h5'
         model = load_model(input_size = num_vars, output_size = num_classes, hidden_units = 50, regularization = 0, weights_path = path, model_type = model_type)
         #plot_model(model,to_file = "model_with_ConnectionsAndBatchNorm.png",show_shapes = True)
     else:
@@ -173,4 +179,5 @@ if __name__ == "__main__":
     # fail_node(model,[1,0,1])
     # print('F1F2_F3 Output After Failure')
     # print_layer_output(model,test_data,'F1F2_F3')
+    # print_layer_output(model,test_data,'fog2_output_layer')
   
