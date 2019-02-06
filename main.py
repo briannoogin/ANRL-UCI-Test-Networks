@@ -77,14 +77,14 @@ def train_model(training_data,training_labels,model_type):
     if not os.path.exists(path):
         os.mkdir(path)
     if save_model:
-        model.save_weights(path + '/50 units 10 layers with normal connections [.70,.75,.85] weights he_normal .1 dropout adam batchnormcloud 25 epochs new split additional_input' + '.h5')
+        model.save_weights(path + '/50 units 10 layers with inverted connections [.70,.75,.85] weights he_normal .1 dropout sgd batchnormcloud 25 epochs new split additional_input' + '.h5')
     return model
 
 # load model from the weights 
 # model type 0 = baseline model
 # model type 1 = fixed guard model
 # model type 2 = active guard model 
-def load_model(input_size, output_size, hidden_units, regularization, weights_path,model_type):
+def load_model(input_size, output_size, hidden_units, regularization, weights_path,model_type,survive_rates):
     if model_type == 0:
         model = define_baseline_functional_model(input_size,output_size,hidden_units,regularization)
     elif model_type == 1:
@@ -93,12 +93,19 @@ def load_model(input_size, output_size, hidden_units, regularization, weights_pa
         model = define_active_guard_model_with_connections(input_size,output_size,hidden_units,regularization,[.99,.96,.92])
     elif model_type == 3:
         failure_rates = [.70,.75,.85]
-        model = define_model_with_nofogbatchnorm_connections(num_vars,num_classes,hidden_units,0,failure_rates)
+        model = define_model_with_nofogbatchnorm_connections(num_vars,num_classes,hidden_units,0,survive_rates)
+    elif model_type == 4:
+        model = define_model_with_nofogbatchnorm_connections_extrainput(input_size,output_size,hidden_units,0,survive_rates)
     else:
         raise ValueError("Incorrect model type")
-    model.load_weights(weights_path,by_name=True)
-    #print_weights(model)
+    model.load_weights(weights_path)
+    # print_weights(model)
     return model
+
+# used to debug and print out all the weights of the network
+def print_weights(model):
+    for layer in model.layers: 
+        print(layer.get_config(), layer.get_weights())
 
 # returns the test performance measures 
 def test_model(model,test_data,test_labels,set_name):
@@ -148,7 +155,19 @@ def evaluate_withFailures(model,test_data,test_labels):
         test_model(model,test_data,test_labels,'test')
         # reset the model with the original weights 
         model.set_weights(original_weights)
-        
+
+# calculate expected value of network performance, meant to be called by outside function
+def test(survive_array):
+    data,labels= load_data('mHealth_complete.log')
+    training_data, test_data, training_labels, test_labels = train_test_split(data,labels,random_state = 7, test_size = .3)
+    num_vars = len(training_data[0])
+    num_classes = 13
+    path = 'weights/2-5-2019/50 units 10 layers with normal connections [.70,.75,.85] weights he_normal 0 dropout adam batchnormcloud 50 epochs new split additional_input.h5'
+    model = load_model(input_size = num_vars, output_size = num_classes, hidden_units = 50, regularization = 0, weights_path = path, model_type = 4,survive_rates=[.70,.75,.85])
+    fail_node(model,survive_array)
+    preds = predict_classes(model,test_data)
+    return accuracy_score(test_labels,preds)
+
 if __name__ == "__main__":
     np.set_printoptions(suppress=True)
     # load data
@@ -166,13 +185,15 @@ if __name__ == "__main__":
 
     load_weights = False
     if load_weights:
-        path = 'weights/1-31-2019/50 units 10 layers with normal connections [.70,.75,.85] weights he_normal imputed 0s no batch_norm .1 dropout adam batchnormcloud 25 epochs.h5'
-        model = load_model(input_size = num_vars, output_size = num_classes, hidden_units = 50, regularization = 0, weights_path = path, model_type = model_type)
-        #plot_model(model,to_file = "model_with_ConnectionsAndBatchNorm.png",show_shapes = True)
+        path = 'weights/2-5-2019/50 units 10 layers with normal connections [.70,.75,.85] weights he_normal 0 dropout adam batchnormcloud 50 epochs new split additional_input.h5'
+        model = load_model(input_size = num_vars, output_size = num_classes, hidden_units = 50, regularization = 0, weights_path = path, model_type = model_type, survive_rates=[.70,.75,.85])
     else:
-        model = train_model(training_data,training_labels,model_type=model_type)
-    evaluate_withFailures(model,test_data,test_labels)
-
+        print(test([1,0,1]))
+        print(test([1,1,1]))
+    #     model = train_model(training_data,training_labels,model_type=model_type)
+    # evaluate_withFailures(model,test_data,test_labels)
+    # used to plot the model diagram
+    #plot_model(model,to_file = "model_with_ConnectionsAndBatchNormAndAdditionalInput.png",show_shapes = True)
     # check if output layer has all zeros
     # print('F1F2_F3 Output Before Failure')
     # print_layer_output(model,test_data,'F1F2_F3')
