@@ -1,6 +1,28 @@
 
 from collections import Counter
 import random 
+from keras.models import Model
+from sklearn.metrics import accuracy_score
+import numpy as np
+
+# use a model with trained weights to guess if there are no connections 
+def model_guess(model,train_labels,test_data,test_labels):
+    preds = model.predict(test_data)
+    preds = np.argmax(preds,axis=1)
+    # check if the connection is 0 which means that there is no data flowing in the network
+    f3 = model.get_layer(name = "F1F2_F3").output
+    # get the output from the layer
+    output_model = Model(inputs = model.input,outputs=f3)
+    f3_output = output_model.predict(test_data)
+    no_connection_flow = np.array_equal(f3_output,f3_output * 0)
+    # there is no connection flow, make random guess 
+    if no_connection_flow:
+        print("There is no data flow in the network")
+        preds = random_guess(train_labels,test_data)
+    acc = accuracy_score(test_labels,preds)
+    print(acc)
+    return acc
+
 # function returns a array of predictions based on random guessing
 # random guessing is determined by the class distribution from the training data. 
 # input: list of training labels
@@ -20,8 +42,8 @@ def random_guess(train_labels,test_data):
         cumulative_frequency[index] += cumulative_frequency[index-1]
     # make a guess for each test example
     guess_preds = [guess(cumulative_frequency) for example in test_data]
-    print(cumulative_frequency)
-    print(guess_preds[0:10])
+    return guess_preds
+# makes a random number and determines a class based on the cumulative frequency
 def guess(cumulative_frequency):
     # set the seed for more deterministc outputs 
     random.seed(11)

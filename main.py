@@ -21,8 +21,9 @@ import datetime
 import os
 
 from ActiveGuard import define_active_guard_model_with_connections
-from FixedGuard import define_model_with_connections, define_model_with_nofogbatchnorm_connections, define_model_with_nofogbatchnorm_connections_extrainput, random_guessing
+from FixedGuard import define_model_with_connections, define_model_with_nofogbatchnorm_connections, define_model_with_nofogbatchnorm_connections_extrainput
 from Baseline import define_baseline_functional_model
+from random_guess import model_guess
 
 # fails node by making the physical node return 0
 # node_array: bit array, 1 corresponds to alive, 0 corresponds to failure
@@ -165,9 +166,7 @@ def test(survive_array):
     path = 'weights/2-8-2019/500 units 10 layers with normal connections [.70,.75,.85] weights he_normal 0 dropout sgd batchnormcloud 25 epochs new split additional_input.h5'
     model = load_model(input_size = num_vars, output_size = num_classes, hidden_units = 500, regularization = 0, weights_path = path, model_type = 4,survive_rates=[.70,.75,.85])
     fail_node(model,survive_array)
-    preds = predict_classes(model,test_data)
-    print(accuracy_score(test_labels,preds))
-    return accuracy_score(test_labels,preds)
+    return model_guess(model,training_labels,test_data,test_labels)
 
 if __name__ == "__main__":
     np.set_printoptions(suppress=True)
@@ -176,7 +175,6 @@ if __name__ == "__main__":
     # test_data, test_labels = load_data('mHealth_test.log')
     data,labels= load_data('mHealth_complete.log')
     training_data, test_data, training_labels, test_labels = train_test_split(data,labels,random_state = 7, test_size = .3)
-    print(labels.shape)
     # define number of classes and variables in the data
     num_vars = len(training_data[0])
     num_classes = 13
@@ -187,18 +185,9 @@ if __name__ == "__main__":
     load_weights = True
     if load_weights:
         path = 'weights/2-5-2019/50 units 10 layers with normal connections [.70,.75,.85] weights he_normal 0 dropout adam batchnormcloud 50 epochs new split additional_input.h5'
-        #model = load_model(input_size = num_vars, output_size = num_classes, hidden_units = 50, regularization = 0, weights_path = path, model_type = model_type, survive_rates=[.70,.75,.85])
-        random_guessing(num_vars,num_classes,200,0,[70,75,85],test_data,test_labels)
+        model = load_model(input_size = num_vars, output_size = num_classes, hidden_units = 50, regularization = 0, weights_path = path, model_type = model_type, survive_rates=[.70,.75,.85])
     else:
         model = train_model(training_data,training_labels,model_type=model_type,survival_rates = [.001,.001,.001])
     #evaluate_withFailures(model,test_data,test_labels)
     # used to plot the model diagram
     #plot_model(model,to_file = "model_with_ConnectionsAndBatchNormAndAdditionalInput.png",show_shapes = True)
-    # check if output layer has all zeros
-    # print('F1F2_F3 Output Before Failure')
-    # print_layer_output(model,test_data,'F1F2_F3')
-    # fail_node(model,[1,0,1])
-    # print('F1F2_F3 Output After Failure')
-    # print_layer_output(model,test_data,'F1F2_F3')
-    # print_layer_output(model,test_data,'fog2_output_layer')
-  
