@@ -21,7 +21,7 @@ import datetime
 import os
 
 from ActiveGuard import define_active_guard_model_with_connections
-from FixedGuard import define_model_with_connections, define_model_with_nofogbatchnorm_connections, define_model_with_nofogbatchnorm_connections_extrainput
+from FixedGuard import define_model_with_connections, define_model_with_nofogbatchnorm_connections, define_model_with_nofogbatchnorm_connections_extrainput, random_guessing
 from Baseline import define_baseline_functional_model
 
 # fails node by making the physical node return 0
@@ -44,7 +44,7 @@ def fail_node(model,node_array):
             print(layer_name, "was failed")
 
 # trains and returns the model 
-def train_model(training_data,training_labels,model_type):
+def train_model(training_data,training_labels,model_type, survival_rates):
     # variable to save the model
     save_model = True
 
@@ -55,17 +55,17 @@ def train_model(training_data,training_labels,model_type):
         if model_type == 0:
             model = define_baseline_functional_model(num_vars,num_classes,50,0)
         elif model_type == 1:
-            model = define_model_with_connections(num_vars,num_classes,50,0,[.99,.96,.92])
+            model = define_model_with_connections(num_vars,num_classes,50,0,survival_rates)
         elif model_type == 2:
-            model = define_active_guard_model_with_connections(num_vars,num_classes,10,0,[.99,.96,.92])
+            model = define_active_guard_model_with_connections(num_vars,num_classes,10,0,survival_rates)
         elif model_type == 3:
             # survive_rates = [.70,.75,.80]
             # failure_rates = [.3,.25,.20]
             survive_rates = [.70,.75,.85]
-            model = define_model_with_nofogbatchnorm_connections(num_vars,num_classes,50,0,survive_rates)
+            model = define_model_with_nofogbatchnorm_connections(num_vars,num_classes,50,0,survival_rates)
         elif model_type == 4:
             survive_rates = [.70,.75,.85]
-            model = define_model_with_nofogbatchnorm_connections_extrainput(num_vars,num_classes,50,0,survive_rates)
+            model = define_model_with_nofogbatchnorm_connections_extrainput(num_vars,num_classes,500,0,survival_rates)
         else:
             raise ValueError("Incorrect model type")
         # fit model on training data
@@ -77,7 +77,7 @@ def train_model(training_data,training_labels,model_type):
     if not os.path.exists(path):
         os.mkdir(path)
     if save_model:
-        model.save_weights(path + '/50 units 10 layers with inverted connections [.70,.75,.85] weights he_normal .1 dropout sgd batchnormcloud 25 epochs new split additional_input' + '.h5')
+        model.save_weights(path + '/500 units 10 layers with normal connections [.70,.75,.85] weights he_normal 0 dropout sgd batchnormcloud 25 epochs new split additional_input' + '.h5')
     return model
 
 # load model from the weights 
@@ -93,7 +93,7 @@ def load_model(input_size, output_size, hidden_units, regularization, weights_pa
         model = define_active_guard_model_with_connections(input_size,output_size,hidden_units,regularization,[.99,.96,.92])
     elif model_type == 3:
         failure_rates = [.70,.75,.85]
-        model = define_model_with_nofogbatchnorm_connections(num_vars,num_classes,hidden_units,0,survive_rates)
+        model = define_model_with_nofogbatchnorm_connections(input_size,output_size,hidden_units,0,survive_rates)
     elif model_type == 4:
         model = define_model_with_nofogbatchnorm_connections_extrainput(input_size,output_size,hidden_units,0,survive_rates)
     else:
@@ -162,10 +162,11 @@ def test(survive_array):
     training_data, test_data, training_labels, test_labels = train_test_split(data,labels,random_state = 7, test_size = .3)
     num_vars = len(training_data[0])
     num_classes = 13
-    path = 'weights/2-5-2019/50 units 10 layers with normal connections [.70,.75,.85] weights he_normal 0 dropout adam batchnormcloud 50 epochs new split additional_input.h5'
-    model = load_model(input_size = num_vars, output_size = num_classes, hidden_units = 50, regularization = 0, weights_path = path, model_type = 4,survive_rates=[.70,.75,.85])
+    path = 'weights/2-8-2019/500 units 10 layers with normal connections [.70,.75,.85] weights he_normal 0 dropout sgd batchnormcloud 25 epochs new split additional_input.h5'
+    model = load_model(input_size = num_vars, output_size = num_classes, hidden_units = 500, regularization = 0, weights_path = path, model_type = 4,survive_rates=[.70,.75,.85])
     fail_node(model,survive_array)
     preds = predict_classes(model,test_data)
+    print(accuracy_score(test_labels,preds))
     return accuracy_score(test_labels,preds)
 
 if __name__ == "__main__":
@@ -183,15 +184,14 @@ if __name__ == "__main__":
     # define model type
     model_type = 4
 
-    load_weights = False
+    load_weights = True
     if load_weights:
         path = 'weights/2-5-2019/50 units 10 layers with normal connections [.70,.75,.85] weights he_normal 0 dropout adam batchnormcloud 50 epochs new split additional_input.h5'
-        model = load_model(input_size = num_vars, output_size = num_classes, hidden_units = 50, regularization = 0, weights_path = path, model_type = model_type, survive_rates=[.70,.75,.85])
+        #model = load_model(input_size = num_vars, output_size = num_classes, hidden_units = 50, regularization = 0, weights_path = path, model_type = model_type, survive_rates=[.70,.75,.85])
+        random_guessing(num_vars,num_classes,200,0,[70,75,85],test_data,test_labels)
     else:
-        print(test([1,0,1]))
-        print(test([1,1,1]))
-    #     model = train_model(training_data,training_labels,model_type=model_type)
-    # evaluate_withFailures(model,test_data,test_labels)
+        model = train_model(training_data,training_labels,model_type=model_type,survival_rates = [.001,.001,.001])
+    #evaluate_withFailures(model,test_data,test_labels)
     # used to plot the model diagram
     #plot_model(model,to_file = "model_with_ConnectionsAndBatchNormAndAdditionalInput.png",show_shapes = True)
     # check if output layer has all zeros

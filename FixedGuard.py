@@ -7,6 +7,8 @@ from LambdaLayers import add_node_layers
 from keras import regularizers
 from keras import optimizers
 from keras.models import Model
+from sklearn.metrics import accuracy_score
+import numpy as np
 
 # returns fixed guard model with 10 hidden layers
 # f1 = fog node 2 = 1st hidden layer
@@ -244,7 +246,7 @@ def define_model_with_nofogbatchnorm_connections_extrainput(num_vars,num_classes
     f1f2 = multiply_weight_layer_f1f2(f1)
     duplicated_input = Dense(units=hidden_units,name="duplicated_input",activation='relu',kernel_initializer = 'he_normal')(input_layer)
     connection_f2 = Lambda(add_node_layers,name="F1_F2")([f1f2,duplicated_input])
-
+ 
     # second fog node
     f2 = Dense(units=hidden_units,name="fog2_input_layer",activation='relu',kernel_initializer = 'he_normal')(connection_f2)
     f2 = Dropout(dropout,seed=7)(f2)
@@ -284,8 +286,109 @@ def define_model_with_nofogbatchnorm_connections_extrainput(num_vars,num_classes
     cloud = Dropout(dropout,seed=7)(cloud)
     # one output layer
     output_layer = Dense(units=num_classes,activation='softmax',name = "output")(cloud)
+    # there is no connection flowing in the network if there are all zeros in the output, which means that two nodes have been dropped
+    # no_connection_flow = K.equal(connection_f3, connection_f3 * 0)
+    # # generate guess from training distrubution 
+    # guess = output_layer / output_layer
+    # output_layer =  K.switch(no_connection_flow,guess,output_layer)
     # TODO: make a lambda function that checks if there is no data connection flow and does smart random guessing
     model = Model(inputs=input_layer, outputs=output_layer)
     sgd = optimizers.SGD(lr=0.01, decay=1e-6, momentum=0.9, nesterov=True)
     model.compile(loss='sparse_categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
     return model
+# implements random guessing for fixed guard
+def random_guessing(num_vars,num_classes,hidden_units,regularization,survive_rates,test_data,test_labels):
+    # calculate connection weights
+    # naming convention:
+    # ex: f1f2 = connection between fog node 1 and fog node 2
+    # ex: f2c = connection between fog node 2 and cloud node
+
+    connection_weight_f1f2 = 1
+
+    #normal weights
+    connection_weight_f1f3 = survive_rates[0] / (survive_rates[0] + survive_rates[1])
+    connection_weight_f2f3 = survive_rates[1] / (survive_rates[0] + survive_rates[1])
+    connection_weight_f2c = survive_rates[1] / (survive_rates[1] + survive_rates[2])
+    connection_weight_f3c = survive_rates[2] / (survive_rates[1] + survive_rates[2])
+
+
+    # define lambdas for multiplying node weights by connection weight
+    multiply_weight_layer_f1f2 = Lambda((lambda x: x * connection_weight_f1f2), name = "connection_weight_f1f2")
+    multiply_weight_layer_f1f3 = Lambda((lambda x: x * connection_weight_f1f3), name = "connection_weight_f1f3")
+    multiply_weight_layer_f2f3 = Lambda((lambda x: x * connection_weight_f2f3), name = "connection_weight_f2f3")
+    multiply_weight_layer_f2c = Lambda((lambda x: x * connection_weight_f2c), name = "connection_weight_f2c")
+    multiply_weight_layer_f3c = Lambda((lambda x: x * connection_weight_f3c), name = "connection_weight_f3c")
+
+    # dropout rate for all dropout layers 
+    dropout = 0
+    # one input layer
+    input_layer = Input(shape = (num_vars,))
+    # 10 hidden layers, 3 fog nodes
+    # first fog node
+    f1 = Dense(units=hidden_units,name="fog1_output_layer",activation='relu',kernel_initializer = 'he_normal')(input_layer)
+    f1 = Dropout(dropout,seed=7)(f1)
+    f1f2 = multiply_weight_layer_f1f2(f1)
+    duplicated_input = Dense(units=hidden_units,name="duplicated_input",activation='relu',kernel_initializer = 'he_normal')(input_layer)
+    connection_f2 = Lambda(add_node_layers,name="F1_F2")([f1f2,duplicated_input])
+ 
+    # second fog node
+    f2 = Dense(units=hidden_units,name="fog2_input_layer",activation='relu',kernel_initializer = 'he_normal')(connection_f2)
+    f2 = Dropout(dropout,seed=7)(f2)
+    f2 = Dense(units=hidden_units,name="fog2_output_layer",activation='relu',kernel_initializer = 'he_normal')(f2)
+    f2 = Dropout(dropout,seed=7)(f2)
+    f1f3 = multiply_weight_layer_f1f3(f1)
+    f2f3 = multiply_weight_layer_f2f3(f2)
+    connection_f3 = Lambda(add_node_layers,name="F1F2_F3")([f1f3,f2f3])
+
+    # third fog node
+    f3 = Dense(units=hidden_units,name="fog3_input_layer",activation='relu',kernel_initializer = 'he_normal')(connection_f3)
+    f3 = Dropout(dropout,seed=7)(f3)
+    f3 = Dense(units=hidden_units,name="fog3_layer_1",activation='relu',kernel_initializer = 'he_normal')(f3)
+    f3 = Dropout(dropout,seed=7)(f3)
+    f3 = Dense(units=hidden_units,name="fog3_output_layer",activation='relu',kernel_initializer = 'he_normal')(f3)
+    f3 = Dropout(dropout,seed=7)(f3)
+    f2c = multiply_weight_layer_f2c(f2)
+    f3c = multiply_weight_layer_f3c(f3)
+    connection_cloud = Lambda(add_node_layers,name="F2F3_FC")([f2c,f3c])
+
+    # cloud node
+    cloud = Dense(units=hidden_units,name="cloud_input_layer",kernel_initializer = 'he_normal')(connection_cloud)
+    cloud = BatchNormalization()(cloud)
+    cloud = Activation(activation='relu')(cloud)
+    cloud = Dropout(dropout,seed=7)(cloud)
+    cloud = Dense(units=hidden_units,name="cloud_layer_1",kernel_initializer = 'he_normal')(cloud)
+    cloud = BatchNormalization()(cloud)
+    cloud = Activation(activation='relu')(cloud)
+    cloud = Dropout(dropout,seed=7)(cloud)
+    cloud = Dense(units=hidden_units,name="cloud_layer_2",kernel_initializer = 'he_normal')(cloud)
+    cloud = BatchNormalization()(cloud)
+    cloud = Activation(activation='relu')(cloud)
+    cloud = Dropout(dropout,seed=7)(cloud)
+    cloud = Dense(units=hidden_units,name="cloud_layer_3",kernel_initializer = 'he_normal')(cloud)
+    cloud = BatchNormalization()(cloud)
+    cloud = Activation(activation='relu')(cloud)
+    cloud = Dropout(dropout,seed=7)(cloud)
+    # one output layer
+    output_layer = Dense(units=num_classes,activation='softmax',name = "output")(cloud)
+    # there is no connection flowing in the network if there are all zeros in the output, which means that two nodes have been dropped
+
+    # output_layer =  K.switch(no_connection_flow,guess,output_layer)
+    # TODO: make a lambda function that checks if there is no data connection flow and does smart random guessing
+    model = Model(inputs=input_layer, outputs=output_layer)
+    model.compile(loss='sparse_categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
+    model.load_weights('weights/2-8-2019/200 units 10 layers with normal connections [.70,.75,.85] weights he_normal 0 dropout sgd batchnormcloud 25 epochs new split additional_input.h5')
+    preds = model.predict(test_data)
+    preds = np.argmax(preds,axis=1)
+    # check if the connection is 0 which means that there is no data flowing in the network
+    f3 = model.get_layer(name = "F1F2_F3").output
+    # get the output from the layer
+    output_model = Model(inputs = model.input,outputs=f3)
+    f3_output = output_model.predict(test_data) * 0
+    no_connection_flow = np.array_equal(f3_output,f3_output * 0)
+    print(no_connection_flow)
+    # there is no connection flow, make random guess 
+    if no_connection_flow:
+        preds = [1] * len(test_labels)
+    acc = accuracy_score(test_labels,preds)
+    print(acc)
+       
