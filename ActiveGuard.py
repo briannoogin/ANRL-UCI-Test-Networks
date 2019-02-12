@@ -9,6 +9,7 @@ from keras import optimizers
 from keras.models import Model
 from keras.backend import constant
 import numpy as np
+import random 
 
 # returns active guard model with 10 hidden layers
 # f1 = fog node 2 = 1st hidden layer
@@ -33,13 +34,19 @@ def define_active_guard_model_with_connections(num_vars,num_classes,hidden_units
     multiply_weight_layer_f2c = Lambda((lambda x: x * connection_weight_f2c), name = "connection_weight_f2c")
     multiply_weight_layer_f3c = Lambda((lambda x: x * connection_weight_f3c), name = "connection_weight_f3c")
 
-    # define probabilties for failure
-    dropout_fog_node_1 = constant(1 - survive_rates[0])
-    dropout_fog_node_2 = constant(1 - survive_rates[1])
-    dropout_fog_node_3 = constant(1 - survive_rates[2])
-
-    # define lambda for fog failure
-    failure_lambda = Lambda(lambda x : K.switch(K.variable(True), x * 0, x))
+    # define lambda for fog failure, failures are only during training
+    f1_rand = 0
+    f2_rand = 0
+    f3_rand = 0
+    # set training phase to true 
+    K.set_learning_phase(1)
+    if K.learning_phase():
+        f1_rand = random.random()
+        f2_rand = random.random()
+        f2_rand = random.random()
+    f1_failure_lambda = Lambda(lambda x : K.switch(K.variable(f1_rand > 1 - survive_rates[0]), x * 0, x),name = 'f1_failure_lambda')
+    f2_failure_lambda = Lambda(lambda x : K.switch(K.variable(f2_rand > 1 - survive_rates[1]), x * 0, x),name = 'f2_failure_lambda')
+    f3_failure_lambda = Lambda(lambda x : K.switch(K.variable(f3_rand > 1 - survive_rates[2]), x * 0, x),name = 'f3_failure_lambda')
 
     # one input layer
     input_layer = Input(shape = (num_vars,))
@@ -47,15 +54,14 @@ def define_active_guard_model_with_connections(num_vars,num_classes,hidden_units
     # 10 hidden layers, 3 fog nodes
     # first fog node
     f1 = Dense(units=hidden_units,activation='relu',kernel_regularizer=regularizers.l1(regularization),name="fog1_output_layer")(input_layer)
-    #f1 = failure_lambda(f1)
+    f1 = f1_failure_lambda(f1)
     f1f2 = multiply_weight_layer_f1f2(f1)
     connection_f2 = Lambda(add_first_node_layers,name="F1_F2")(f1f2)
-    #TODO: add branch lambda if there are multiple failures?
 
     # second fog node
     f2 = Dense(units=hidden_units,activation='relu',kernel_regularizer=regularizers.l1(regularization),name="fog2_input_layer")(connection_f2)
     f2 = Dense(units=hidden_units,activation='relu',kernel_regularizer=regularizers.l1(regularization),name="fog2_output_layer")(f2)
-    #f2 = failure_lambda(f2)
+    f2 = f2_failure_lambda(f2)
     f1f3 = multiply_weight_layer_f1f3(f1)
     f2f3 = multiply_weight_layer_f2f3(f2)
     connection_f3 = Lambda(add_node_layers,name="F1F2_F3")([f1f3,f2f3])
@@ -64,7 +70,7 @@ def define_active_guard_model_with_connections(num_vars,num_classes,hidden_units
     f3 = Dense(units=hidden_units,activation='relu',kernel_regularizer=regularizers.l1(regularization),name="fog3_input_layer")(connection_f3)
     f3 = Dense(units=hidden_units,activation='relu',kernel_regularizer=regularizers.l1(regularization),name="fog3_layer_1")(f3)
     f3 = Dense(units=hidden_units,activation='relu',kernel_regularizer=regularizers.l1(regularization),name="fog3_output_layer")(f3)
-    f3 = failure_lambda(f3)
+    f3 = f3_failure_lambda(f3)
     f2c = multiply_weight_layer_f2c(f2)
     f3c = multiply_weight_layer_f3c(f3)
     connection_cloud = Lambda(add_node_layers,name="F2F3_FC")([f2c,f3c])
@@ -79,5 +85,6 @@ def define_active_guard_model_with_connections(num_vars,num_classes,hidden_units
     normal_output_layer = Dense(units=num_classes,activation='softmax',name = "output")(cloud)
 
     model = Model(inputs=input_layer, outputs=normal_output_layer)
+    # TODO: define custom metric to keep track of network failing during training
     model.compile(loss='sparse_categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
     return model
