@@ -40,7 +40,7 @@ def define_active_guard_model_with_connections(num_vars,num_classes,hidden_units
 
     # define lambda for fog failure
     failure_lambda = Lambda(lambda x : K.switch(K.variable(True), x * 0, x))
-    
+
     # one input layer
     input_layer = Input(shape = (num_vars,))
 
@@ -81,32 +81,3 @@ def define_active_guard_model_with_connections(num_vars,num_classes,hidden_units
     model = Model(inputs=input_layer, outputs=normal_output_layer)
     model.compile(loss='sparse_categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
     return model
-
-# lambda function based on the probability will randonmly drop a node
-# input: layer tensor and probability 
-# output: outputs either a tensor of 0s with boolean indicating failure or the orginal tensor with a boolean indicating survival
-def dropout_layer(input_tensor):
-    layer = input_tensor[0]
-    survive_prob = input_tensor[1]
-    num = K.variable(np.random.random())
-    # only dropout during training
-    if K.learning_phase() == 0:
-        return K.switch(K.greater(num,survive_prob),layer * 0, layer)
-    else:
-        return layer
-
-def dropout_layer_output_shape(input_shape):
-    return input_shape
-
-# lambda function that does smart guessing based on training data when there is no data flow
-# input: probabilties for each class
-def smart_guessing(input_tensor):
-    num = np.random.random()
-
-# function that returns whether there is data flow in the network
-def data_flow(failure_list):
-    count = 0;
-    for failure in failure_list:
-        if failure:
-            count+=1
-    return count >= 2
