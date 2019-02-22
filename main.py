@@ -58,7 +58,7 @@ def train_model(training_data,training_labels,model_type, survival_rates):
         elif model_type == 1:
             model = define_model_with_connections(num_vars,num_classes,50,0,survival_rates)
         elif model_type == 2:
-            model = define_active_guard_model_with_connections(num_vars,num_classes,10,0,survival_rates)
+            model = define_active_guard_model_with_connections(num_vars,num_classes,50,0,survival_rates)
         elif model_type == 3:
             # survive_rates = [.70,.75,.80]
             # failure_rates = [.3,.25,.20]
@@ -66,11 +66,15 @@ def train_model(training_data,training_labels,model_type, survival_rates):
             model = define_model_with_nofogbatchnorm_connections(num_vars,num_classes,50,0,survival_rates)
         elif model_type == 4:
             survive_rates = [.70,.75,.85]
-            model = define_model_with_nofogbatchnorm_connections_extrainput(num_vars,num_classes,500,0,survival_rates)
+            model = define_model_with_nofogbatchnorm_connections_extrainput(num_vars,num_classes,50,0,survival_rates)
         else:
             raise ValueError("Incorrect model type")
         # fit model on training data
-        model.fit(training_data,training_labels, epochs=25, batch_size=128,verbose=1,shuffle = True)
+        if model_type == 2:
+            model.fit(training_data,training_labels, epochs=25, batch_size=128,verbose=1,shuffle = True,callbacks=[])
+        else:
+
+            model.fit(training_data,training_labels, epochs=10, batch_size=128,verbose=1,shuffle = True)
 
     now = datetime.datetime.now()
     date = str(now.month) + '-' + str(now.day) + '-' + str(now.year)
@@ -78,7 +82,7 @@ def train_model(training_data,training_labels,model_type, survival_rates):
     if not os.path.exists(path):
         os.mkdir(path)
     if save_model:
-        model.save_weights(path + '/500 units 10 layers with normal connections [.70,.75,.85] weights he_normal 0 dropout sgd batchnormcloud 25 epochs new split additional_input' + '.h5')
+        model.save_weights(path + '/50 units 10 layers activeguard [.92, .96, .99] sgd 25 epochs .8 split stratify' + '.h5')
     return model
 
 # load model from the weights 
@@ -91,7 +95,7 @@ def load_model(input_size, output_size, hidden_units, regularization, weights_pa
     elif model_type == 1:
         model = define_model_with_connections(input_size,output_size,hidden_units,regularization,[.99,.96,.92])
     elif model_type == 2:
-        model = define_active_guard_model_with_connections(input_size,output_size,hidden_units,regularization,[.99,.96,.92])
+        model = define_active_guard_model_with_connections(input_size,output_size,hidden_units,regularization,survive_rates)
     elif model_type == 3:
         failure_rates = [.70,.75,.85]
         model = define_model_with_nofogbatchnorm_connections(input_size,output_size,hidden_units,0,survive_rates)
@@ -160,34 +164,35 @@ def evaluate_withFailures(model,test_data,test_labels):
 # calculate expected value of network performance, meant to be called by outside function
 def test(survive_array):
     data,labels= load_data('mHealth_complete.log')
-    training_data, test_data, training_labels, test_labels = train_test_split(data,labels,random_state = 7, test_size = .3)
+    training_data, test_data, training_labels, test_labels = train_test_split(data,labels,random_state = 42, test_size = .2, shuffle = True,stratify = labels)
     num_vars = len(training_data[0])
     num_classes = 13
-    path = 'weights/2-8-2019/500 units 10 layers with normal connections [.70,.75,.85] weights he_normal 0 dropout sgd batchnormcloud 25 epochs new split additional_input.h5'
-    model = load_model(input_size = num_vars, output_size = num_classes, hidden_units = 500, regularization = 0, weights_path = path, model_type = 4,survive_rates=[.70,.75,.85])
+    path = 'weights/2-21-2019/50 units 10 layers activeguard [.92, .96, .99] sgd 25 epochs .8 split stratify.h5'
+    model = load_model(input_size = num_vars, output_size = num_classes, hidden_units = 50, regularization = 0, weights_path = path, model_type = 2,survive_rates=[.92,.96,.99])
     fail_node(model,survive_array)
     return model_guess(model,training_labels,test_data,test_labels)
 
 if __name__ == "__main__":
     np.set_printoptions(suppress=True)
-    # load data
-    # training_data, training_labels = load_data('mHealth_train.log')
-    # test_data, test_labels = load_data('mHealth_test.log')
+    # # load data
     data,labels= load_data('mHealth_complete.log')
-    training_data, test_data, training_labels, test_labels = train_test_split(data,labels,random_state = 7, test_size = .3)
+    training_data, test_data, training_labels, test_labels = train_test_split(data,labels,random_state = 42, test_size = .2, shuffle = True, stratify = labels)
+
     # define number of classes and variables in the data
     num_vars = len(training_data[0])
     num_classes = 13
 
     # define model type
-    model_type = 4
+    model_type = 2
 
-    load_weights = True
+    load_weights = False
     if load_weights:
-        path = 'weights/2-5-2019/50 units 10 layers with normal connections [.70,.75,.85] weights he_normal 0 dropout adam batchnormcloud 50 epochs new split additional_input.h5'
-        model = load_model(input_size = num_vars, output_size = num_classes, hidden_units = 50, regularization = 0, weights_path = path, model_type = model_type, survive_rates=[.70,.75,.85])
+        path = 'weights/2-16-2019/50 units 10 layers with normal connections fixedguard [.92, .96, .99] weights he_normal adam 10 epochs new split different seeds no shuffle batchnorm.h5'
+        model = load_model(input_size = num_vars, output_size = num_classes, hidden_units = 50, regularization = 0, weights_path = path, model_type = model_type, survive_rates=[.92, .96, .99])
     else:
-        model = train_model(training_data,training_labels,model_type=model_type,survival_rates = [.001,.001,.001])
-    #evaluate_withFailures(model,test_data,test_labels)
+        K.set_learning_phase(1)
+        model = train_model(training_data,training_labels,model_type=model_type,survival_rates=[.92, .96, .99])
+    K.set_learning_phase(0)
+    evaluate_withFailures(model,test_data,test_labels)
     # used to plot the model diagram
     #plot_model(model,to_file = "model_with_ConnectionsAndBatchNormAndAdditionalInput.png",show_shapes = True)

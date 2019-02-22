@@ -2,6 +2,7 @@
 from collections import Counter
 import random 
 from keras.models import Model
+import keras.backend as K
 from sklearn.metrics import accuracy_score
 import numpy as np
 
@@ -21,6 +22,7 @@ def model_guess(model,train_labels,test_data,test_labels):
         preds = random_guess(train_labels,test_data)
     acc = accuracy_score(test_labels,preds)
     print(acc)
+    K.clear_session()
     return acc
 
 # function returns a array of predictions based on random guessing

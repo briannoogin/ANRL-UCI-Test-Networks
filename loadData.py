@@ -20,6 +20,7 @@ def load_data(path):
     for index in range(len(data)):
         labels.append(data[index][-1])
         del data[index][-1]
+    #print(np.asarray(data))
     return np.asarray(data),np.asarray(labels)
 
 # divides dataset into training, validation, and test set
@@ -53,6 +54,20 @@ def divide_data():
     np.savetxt("mHealth_train.log", training_data, fmt='%d')
     # np.savetxt("mHealth_validation.log", validation_data, fmt='%d')
     # np.savetxt("mHealth_test.log", test_data, fmt='%d')
+
+# combines all the patients into one complete dataset   
+def combine_data():
+    path = 'MHEALTHDATASET/mHealth_subject'
+    training_data,training_labels = load_data(path + '1' + '.log')
+    # load each patient data
+    for subject in range(2,11):
+        file_path = path + str(subject) + '.log'
+        data,labels = load_data(file_path)
+        training_data = np.concatenate((training_data,data),axis=0)
+        training_labels =  np.concatenate((training_labels,labels),axis=0)
+        print("after concatenating",training_data.shape)
+    training_data = np.column_stack((training_data,training_labels))
+    np.savetxt("mHealth_complete.log", training_data, fmt='%d')
 # deletes all examples with 0 as label
 def deleteZeros(path):
      f = pd.read_table(path, header=None, delim_whitespace=True)
@@ -61,6 +76,13 @@ def deleteZeros(path):
      #dataframe.sort_index(by='count', ascending=[True])
      print(f[23].value_counts().sort_index(ascending=[True]).tolist())
      return f
+
+def replaceZeros(path):
+    df = pd.read_table(path, header=None, delim_whitespace=True)
+    df.replace(0,0.1,inplace=True)
+    #print(df.values)
+    np.savetxt(path, df.values,fmt='%g')
+
 # loops through all data files and deletes examples with 0 as label
 def deleteZerosForAllFiles():
      for i in range(1,11):
@@ -84,6 +106,7 @@ def removeDuplicates():
     np.savetxt("mHealth_uniques_train.log", train_uniques, fmt='%d')
     np.savetxt("mHealth_uniques_validation.log", validation_uniques, fmt='%d')
     np.savetxt("mHealth_uniques_test.log", test_uniques, fmt='%d')
+
 # oversamples minority cases to achieve a balanced dataset
 def perform_SMOTE():
     # read files
@@ -108,5 +131,7 @@ if __name__ == "__main__":
     #deleteZerosForAllFiles()
     #removeDuplicates()
     #perform_SMOTE()
-    divide_data()
+    #divide_data()
+    #replaceZeros('mHealth_test.log')
+    combine_data()
     
