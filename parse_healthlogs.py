@@ -1,5 +1,9 @@
 import sys
 
+#ARGS:
+#1: INPUT FILE
+#2: FORMATTED OUTPUT FILE
+
 with open(sys.argv[2], mode="w") as out:
     with open(sys.argv[1]) as log:
         for line in log:
