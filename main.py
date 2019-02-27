@@ -54,11 +54,11 @@ def train_model(training_data,training_labels,model_type, survival_rates):
     for model_iteration in range(0,num_iterations):   
         # create model
         if model_type == 0:
-            model = define_baseline_functional_model(num_vars,num_classes,50,0)
+            model = define_baseline_functional_model(num_vars,num_classes,250,0)
         elif model_type == 1:
-            model = define_model_with_connections(num_vars,num_classes,50,0,survival_rates)
+            model = define_model_with_connections(num_vars,num_classes,250,0,survival_rates)
         elif model_type == 2:
-            model = define_active_guard_model_with_connections(num_vars,num_classes,50,0,survival_rates)
+            model = define_active_guard_model_with_connections(num_vars,num_classes,250,0,survival_rates)
         elif model_type == 3:
             # survive_rates = [.70,.75,.80]
             # failure_rates = [.3,.25,.20]
@@ -66,12 +66,12 @@ def train_model(training_data,training_labels,model_type, survival_rates):
             model = define_model_with_nofogbatchnorm_connections(num_vars,num_classes,50,0,survival_rates)
         elif model_type == 4:
             survive_rates = [.70,.75,.85]
-            model = define_model_with_nofogbatchnorm_connections_extrainput(num_vars,num_classes,50,0,survival_rates)
+            model = define_model_with_nofogbatchnorm_connections_extrainput(num_vars,num_classes,250,0,survival_rates)
         else:
             raise ValueError("Incorrect model type")
         # fit model on training data
         if model_type == 2:
-            model.fit(training_data,training_labels, epochs=25, batch_size=128,verbose=1,shuffle = True,callbacks=[])
+            model.fit(training_data,training_labels, epochs=10, batch_size=128,verbose=1,shuffle = True,callbacks=[])
         else:
 
             model.fit(training_data,training_labels, epochs=10, batch_size=128,verbose=1,shuffle = True)
@@ -82,7 +82,7 @@ def train_model(training_data,training_labels,model_type, survival_rates):
     if not os.path.exists(path):
         os.mkdir(path)
     if save_model:
-        model.save_weights(path + '/50 units 10 layers activeguard [.92, .96, .99] sgd 25 epochs .8 split stratify' + '.h5')
+        model.save_weights(path + '/250 units 10 layers fixedguard [.7, .8, .85] adam 10 epochs .8 split stratify' + '.h5')
     return model
 
 # load model from the weights 
@@ -167,8 +167,10 @@ def test(survive_array):
     training_data, test_data, training_labels, test_labels = train_test_split(data,labels,random_state = 42, test_size = .2, shuffle = True,stratify = labels)
     num_vars = len(training_data[0])
     num_classes = 13
-    path = 'weights/2-21-2019/50 units 10 layers activeguard [.92, .96, .99] sgd 25 epochs .8 split stratify.h5'
-    model = load_model(input_size = num_vars, output_size = num_classes, hidden_units = 50, regularization = 0, weights_path = path, model_type = 2,survive_rates=[.92,.96,.99])
+    path = 'weights/2-26-2019/250 units 10 layers fixedguard [.7, .8, .85] adam 10 epochs .8 split stratify.h5'
+    model_type = 4
+    survive_rates = [.7,.8,.85]
+    model = load_model(input_size = num_vars, output_size = num_classes, hidden_units = 250, regularization = 0, weights_path = path, model_type = model_type,survive_rates=survive_rates)
     fail_node(model,survive_array)
     return model_guess(model,training_labels,test_data,test_labels)
 
@@ -183,7 +185,7 @@ if __name__ == "__main__":
     num_classes = 13
 
     # define model type
-    model_type = 2
+    model_type = 4
 
     load_weights = False
     if load_weights:
@@ -191,7 +193,7 @@ if __name__ == "__main__":
         model = load_model(input_size = num_vars, output_size = num_classes, hidden_units = 50, regularization = 0, weights_path = path, model_type = model_type, survive_rates=[.92, .96, .99])
     else:
         K.set_learning_phase(1)
-        model = train_model(training_data,training_labels,model_type=model_type,survival_rates=[.92, .96, .99])
+        model = train_model(training_data,training_labels,model_type=model_type,survival_rates=[.7, .8, .85])
     K.set_learning_phase(0)
     evaluate_withFailures(model,test_data,test_labels)
     # used to plot the model diagram

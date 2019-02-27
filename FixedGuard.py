@@ -103,7 +103,7 @@ def define_model_with_connections(num_vars,num_classes,hidden_units,regularizati
     # TODO: make a lambda functoin that checks if there is no data connection flow and does smart random guessing
     model = Model(inputs=input_layer, outputs=output_layer)
     sgd = optimizers.SGD(lr=0.01, decay=1e-6, momentum=0.9, nesterov=True)
-    model.compile(loss='sparse_categorical_crossentropy', optimizer=sgd, metrics=['accuracy'])
+    model.compile(loss='sparse_categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
     return model
 
 # returns fixed guard model with 10 hidden layers
@@ -216,18 +216,6 @@ def define_model_with_nofogbatchnorm_connections_extrainput(num_vars,num_classes
     connection_weight_f2c = survive_rates[1] / (survive_rates[1] + survive_rates[2])
     connection_weight_f3c = survive_rates[2] / (survive_rates[1] + survive_rates[2])
 
-    # inverted weights
-    # connection_weight_f1f3 =  (survive_rates[0] + survive_rates[1]) / survive_rates[1] 
-    # connection_weight_f2f3 = (survive_rates[0] + survive_rates[1]) / survive_rates[0]
-    # connection_weight_f2c = (survive_rates[1] + survive_rates[2]) / survive_rates[2] 
-    # connection_weight_f3c = (survive_rates[1] + survive_rates[2]) / survive_rates[1]
-
-    # set to constant
-    # set aux connections to 0
-    # connection_weight_f1f3 = 0
-    # connection_weight_f2f3 = 1
-    # connection_weight_f2c = 0
-    # connection_weight_f3c = 1
 
     # define lambdas for multiplying node weights by connection weight
     multiply_weight_layer_f1f2 = Lambda((lambda x: x * connection_weight_f1f2), name = "connection_weight_f1f2")
@@ -270,29 +258,23 @@ def define_model_with_nofogbatchnorm_connections_extrainput(num_vars,num_classes
 
     # cloud node
     cloud = Dense(units=hidden_units,name="cloud_input_layer",kernel_initializer = 'he_normal')(connection_cloud)
-    cloud = BatchNormalization()(cloud)
+    #cloud = BatchNormalization()(cloud)
     cloud = Activation(activation='relu')(cloud)
     cloud = Dropout(dropout,seed=7)(cloud)
     cloud = Dense(units=hidden_units,name="cloud_layer_1",kernel_initializer = 'he_normal')(cloud)
-    cloud = BatchNormalization()(cloud)
+    #cloud = BatchNormalization()(cloud)
     cloud = Activation(activation='relu')(cloud)
     cloud = Dropout(dropout,seed=7)(cloud)
     cloud = Dense(units=hidden_units,name="cloud_layer_2",kernel_initializer = 'he_normal')(cloud)
-    cloud = BatchNormalization()(cloud)
+    #cloud = BatchNormalization()(cloud)
     cloud = Activation(activation='relu')(cloud)
     cloud = Dropout(dropout,seed=7)(cloud)
     cloud = Dense(units=hidden_units,name="cloud_layer_3",kernel_initializer = 'he_normal')(cloud)
-    cloud = BatchNormalization()(cloud)
+    #cloud = BatchNormalization()(cloud)
     cloud = Activation(activation='relu')(cloud)
     cloud = Dropout(dropout,seed=7)(cloud)
     # one output layer
     output_layer = Dense(units=num_classes,activation='softmax',name = "output")(cloud)
-    # there is no connection flowing in the network if there are all zeros in the output, which means that two nodes have been dropped
-    # no_connection_flow = K.equal(connection_f3, connection_f3 * 0)
-    # # generate guess from training distrubution 
-    # guess = output_layer / output_layer
-    # output_layer =  K.switch(no_connection_flow,guess,output_layer)
-    # TODO: make a lambda function that checks if there is no data connection flow and does smart random guessing
     model = Model(inputs=input_layer, outputs=output_layer)
     sgd = optimizers.SGD(lr=0.01, decay=1e-6, momentum=0.9, nesterov=True)
     model.compile(loss='sparse_categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
