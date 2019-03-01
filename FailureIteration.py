@@ -1,4 +1,8 @@
 from main import test
+from sklearn.metrics import accuracy_score
+from sklearn.metrics import recall_score
+from sklearn.metrics import precision_score
+import keras.models
 
 def iterateFailures( numFailureCombinations, maxNumComponentFailure, debug):   
    for i in range(numFailureCombinations):
@@ -11,8 +15,21 @@ def iterateFailures( numFailureCombinations, maxNumComponentFailure, debug):
             weightList.append(weight)
             if debug:
                 print("numSurvived:",numSurvived,"weight:", weight, "acc:",accuracy)
-        
 
+# runs through all failure configurations for one model
+# prints out result to file
+def iterateFailuresExperiment(surv,numComponents,maxNumComponentFailure,debug,model,accuracyList,weightList,test_data,test_labels):
+    for i in range(2 ** numComponents):
+        numSurvived = numSurvivedComponents(i)
+        if ( numSurvived >= numComponents - maxNumComponentFailure ):
+            listOfZerosOnes = convertBinaryToList(i, numComponents)
+            accuracy = calcModelAccuracy(model,test_data,test_labels)
+            weight = calcWeight(surv, listOfZerosOnes)
+            accuracyList.append(accuracy)
+            weightList.append(weight)
+            if debug:
+                print("numSurvived:",numSurvived,"weight:", weight, "acc:",accuracy)
+                
 def calcAverageAccuracy(acuracyList, weightList):
     averageAccuracy = 0
     for i in range(len(acuracyList)):
@@ -57,11 +74,28 @@ def convertBinaryToList(number, numBits):
 def calcAccuracy(listOfZerosOnes):
     return test([float(listOfZerosOnes[i]) for i in range(len(listOfZerosOnes))])
 
+def calcModelAccuracy(model,test_data,test_labels):
+    preds = model.predict(test_data).argmax(axis=-1)
+    precision = precision_score(test_labels,preds,average='micro')
+    recall = recall_score(test_labels,preds,average='micro')
+    acc = accuracy_score(test_labels,preds)
+    return acc
+
 def normalizeWeights(weights):
     sumWeights = sum(weights)
     weightNormalized = [(x/sumWeights) for x in weights]
     return weightNormalized
  
+def run(model,surv,test_data,test_labels):
+    numComponents = len(surv)
+    maxNumComponentFailure = 3
+    debug = True
+    accuracyList = []
+    weightList = []
+    iterateFailuresExperiment(surv,numComponents, maxNumComponentFailure, debug,model,accuracyList,weightList,test_data,test_labels)
+    weightList = normalizeWeights(weightList)
+
+    print("Average Accuracy:", calcAverageAccuracy(accuracyList, weightList))
 # Driver program
 if __name__ == "__main__":  
     surv = [.99,.96,.92]
