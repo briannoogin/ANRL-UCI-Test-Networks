@@ -5,6 +5,8 @@ from loadData import load_data
 from sklearn.model_selection import train_test_split
 from FailureIteration import run
 import keras.backend as K
+import datetime
+import os
 # runs all 3 failure configurations for all 3 models
 if __name__ == "__main__":
     data,labels= load_data('mHealth_complete.log')
@@ -35,6 +37,22 @@ if __name__ == "__main__":
 
         # test models
         K.set_learning_phase(0)
-        run(active_guard,survive_configuration,test_data,test_labels)
-        run(fixed_guard,survive_configuration,test_data,test_labels)
-        run(baseline,survive_configuration,test_data,test_labels)
+        now = datetime.datetime.now()
+        date = str(now.month) + '-' + str(now.day) + '-' + str(now.year)
+        file_name = 'results/' + date + '/results.txt'
+        # make folder for outputs 
+        if not os.path.exists('results/' + date):
+            os.mkdir('results/' + date)
+        # write results to a file 
+        with open(file_name,'a+') as file:
+            print(survive_configuration)
+            file.write(str(survive_configuration) + '\n')
+            file.write('ACTIVE GUARD' + '\n')
+            print("ACTIVE GUARD")
+            run(file_name,active_guard,survive_configuration,test_data,test_labels)
+            file.write('FIXED GUARD' + '\n')
+            print("FIXED GUARD")
+            run(file_name,fixed_guard,survive_configuration,test_data,test_labels)
+            file.write('BASELINE' + '\n')
+            print("BASELINE")
+            run(file_name,baseline,survive_configuration,test_data,test_labels)

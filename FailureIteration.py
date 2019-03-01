@@ -18,7 +18,7 @@ def iterateFailures( numFailureCombinations, maxNumComponentFailure, debug):
 
 # runs through all failure configurations for one model
 # prints out result to file
-def iterateFailuresExperiment(surv,numComponents,maxNumComponentFailure,debug,model,accuracyList,weightList,test_data,test_labels):
+def iterateFailuresExperiment(surv,numComponents,maxNumComponentFailure,debug,model,accuracyList,weightList,file_name,test_data,test_labels):
     for i in range(2 ** numComponents):
         numSurvived = numSurvivedComponents(i)
         if ( numSurvived >= numComponents - maxNumComponentFailure ):
@@ -27,8 +27,9 @@ def iterateFailuresExperiment(surv,numComponents,maxNumComponentFailure,debug,mo
             weight = calcWeight(surv, listOfZerosOnes)
             accuracyList.append(accuracy)
             weightList.append(weight)
-            if debug:
-                print("numSurvived:",numSurvived,"weight:", weight, "acc:",accuracy)
+            print("numSurvived:",numSurvived,"weight:", weight, "acc:",accuracy)
+            with open(file_name,'a+') as file:
+                file.write("numSurvived: " + str(numSurvived) + "weight: " + str(weight) + "acc: " + str(accuracy) + '\n')
                 
 def calcAverageAccuracy(acuracyList, weightList):
     averageAccuracy = 0
@@ -86,16 +87,17 @@ def normalizeWeights(weights):
     weightNormalized = [(x/sumWeights) for x in weights]
     return weightNormalized
  
-def run(model,surv,test_data,test_labels):
+def run(file_name,model,surv,test_data,test_labels):
     numComponents = len(surv)
     maxNumComponentFailure = 3
     debug = True
     accuracyList = []
     weightList = []
-    iterateFailuresExperiment(surv,numComponents, maxNumComponentFailure, debug,model,accuracyList,weightList,test_data,test_labels)
+    iterateFailuresExperiment(surv,numComponents, maxNumComponentFailure, debug,model,accuracyList,weightList,file_name,test_data,test_labels)
     weightList = normalizeWeights(weightList)
-
-    print("Average Accuracy:", calcAverageAccuracy(accuracyList, weightList))
+    with open(file_name,'a+') as file:
+            file.write('Average Accuracy: ' + str(calcAverageAccuracy(accuracyList, weightList)) + '\n')
+            print("Average Accuracy:", calcAverageAccuracy(accuracyList, weightList))
 # Driver program
 if __name__ == "__main__":  
     surv = [.99,.96,.92]
