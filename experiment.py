@@ -24,29 +24,31 @@ if __name__ == "__main__":
         K.set_learning_phase(1)
         load_model = False
         # create models
+        # active guard
         active_guard = define_active_guard_model_with_connections(num_vars,num_classes,hidden_units,0,survive_configuration)
+        active_guard_file = 'models/' + str(survive_configuration) + ' active_guard.h5'
         if load_model:
-            active_guard.load_weights('models/active_guard.h5')
+            active_guard.load_weights(active_guard_file)
         else:
             active_guard.fit(data,labels,epochs=10, batch_size=128,verbose=1,shuffle = True)
-            active_guard.save_weights('models/active_guard.h5')
-        #K.clear_session()
+            active_guard.save_weights(active_guard_file)
+        # fixed guard
         fixed_guard = define_model_with_nofogbatchnorm_connections_extrainput(num_vars,num_classes,hidden_units,0,survive_configuration)
+        fixed_guard_file = 'models/' + str(survive_configuration) + ' fixed_guard.h5'
         if load_model:
-            fixed_guard.load_weights('models/active_guard.h5')
+            fixed_guard.load_weights(fixed_guard_file)
         else:
             fixed_guard.fit(data,labels,epochs=10, batch_size=128,verbose=1,shuffle = True)
-            fixed_guard.save_weights('models/fixed_guard.h5')
-        #K.clear_session()
+            fixed_guard.save_weights(fixed_guard_file)
+        # baseline
         baseline = define_baseline_functional_model(num_vars,num_classes,hidden_units,0)
+        baseline_file = 'models/' + str(survive_configuration) + ' baseline.h5'
         if load_model:
-            baseline.load_weights('models/baseline.h5')
+            baseline.load_weights(baseline_file)
         else:
             baseline.fit(data,labels,epochs=10, batch_size=128,verbose=1,shuffle = True)
-            baseline.save_weights('models/baseline.h5')
-        #K.clear_session()
-        # train and save models
-
+            baseline.save_weights(baseline_file)
+      
         # test models
         K.set_learning_phase(0)
         now = datetime.datetime.now()
