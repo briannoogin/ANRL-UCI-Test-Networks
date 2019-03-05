@@ -3,7 +3,7 @@ from sklearn.metrics import accuracy_score
 from sklearn.metrics import recall_score
 from sklearn.metrics import precision_score
 import keras.models
-
+from main import fail_node
 def iterateFailures( numFailureCombinations, maxNumComponentFailure, debug):   
    for i in range(numFailureCombinations):
         numSurvived = numSurvivedComponents(i)
@@ -14,7 +14,7 @@ def iterateFailures( numFailureCombinations, maxNumComponentFailure, debug):
             acuracyList.append(accuracy)
             weightList.append(weight)
             if debug:
-                print("numSurvived:",numSurvived,"weight:", weight, "acc:",accuracy)
+                print("numSurvived:",numSurvived," weight:", weight, " acc:",accuracy)
 
 # runs through all failure configurations for one model
 # prints out result to file
@@ -23,13 +23,21 @@ def iterateFailuresExperiment(surv,numComponents,maxNumComponentFailure,debug,mo
         numSurvived = numSurvivedComponents(i)
         if ( numSurvived >= numComponents - maxNumComponentFailure ):
             listOfZerosOnes = convertBinaryToList(i, numComponents)
+            failures = [int(failure) for failure in listOfZerosOnes]
+            # saves a copy of the original model so it does not change during failures 
+            old_weights = model.get_weights()
+            fail_node(model,failures)
+            print(failures)
             accuracy = calcModelAccuracy(model,test_data,test_labels)
+            # change the changed weights to the original weights
+            model.set_weights(old_weights)
+            #TODO: fix the weight of the result cuz its not suppose to be negative 
             weight = calcWeight(surv, listOfZerosOnes)
             accuracyList.append(accuracy)
             weightList.append(weight)
-            print("numSurvived:",numSurvived,"weight:", weight, "acc:",accuracy)
+            print(" numSurvived:",numSurvived," weight:", weight, " acc:",accuracy)
             with open(file_name,'a+') as file:
-                file.write("numSurvived: " + str(numSurvived) + "weight: " + str(weight) + "acc: " + str(accuracy) + '\n')
+                file.write("numSurvived: " + str(numSurvived) + " weight: " + str(weight) + " acc: " + str(accuracy) + '\n')
                 
 def calcAverageAccuracy(acuracyList, weightList):
     averageAccuracy = 0

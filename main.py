@@ -167,8 +167,8 @@ def test(survive_array):
     training_data, test_data, training_labels, test_labels = train_test_split(data,labels,random_state = 42, test_size = .2, shuffle = True,stratify = labels)
     num_vars = len(training_data[0])
     num_classes = 13
-    path = 'weights/2-26-2019/250 units 10 layers fixedguard [.7, .8, .85] adam 10 epochs .8 split stratify.h5'
-    model_type = 4
+    path = 'weights/2-26-2019/250 units 10 layers baseline [.7, .8, .85] adam 25 epochs .8 split stratify.h5'
+    model_type = 0
     survive_rates = [.7,.8,.85]
     model = load_model(input_size = num_vars, output_size = num_classes, hidden_units = 250, regularization = 0, weights_path = path, model_type = model_type,survive_rates=survive_rates)
     fail_node(model,survive_array)

@@ -7,6 +7,7 @@ from FailureIteration import run
 import keras.backend as K
 import datetime
 import os
+
 # runs all 3 failure configurations for all 3 models
 if __name__ == "__main__":
     data,labels= load_data('mHealth_complete.log')
@@ -14,26 +15,37 @@ if __name__ == "__main__":
     num_vars = len(training_data[0])
     num_classes = 13
     survive_configurations = [
-        [.78,8,.85],
+        [.78,.8,.85],
         [.87,.91,.95],
         [.92,.96,.99]
     ]
     hidden_units = 250
     for survive_configuration in survive_configurations:
+        K.set_learning_phase(1)
+        load_model = False
         # create models
         active_guard = define_active_guard_model_with_connections(num_vars,num_classes,hidden_units,0,survive_configuration)
+        if load_model:
+            active_guard.load_weights('models/active_guard.h5')
+        else:
+            active_guard.fit(data,labels,epochs=10, batch_size=128,verbose=1,shuffle = True)
+            active_guard.save_weights('models/active_guard.h5')
+        #K.clear_session()
         fixed_guard = define_model_with_nofogbatchnorm_connections_extrainput(num_vars,num_classes,hidden_units,0,survive_configuration)
+        if load_model:
+            fixed_guard.load_weights('models/active_guard.h5')
+        else:
+            fixed_guard.fit(data,labels,epochs=10, batch_size=128,verbose=1,shuffle = True)
+            fixed_guard.save_weights('models/fixed_guard.h5')
+        #K.clear_session()
         baseline = define_baseline_functional_model(num_vars,num_classes,hidden_units,0)
-
-        # train models
-        K.set_learning_phase(1)
-        # active_guard.fit(data,labels,epochs=10, batch_size=128,verbose=1,shuffle = True)
-        # fixed_guard.fit(data,labels,epochs=10, batch_size=128,verbose=1,shuffle = True)
-        # baseline.fit(data,labels,epochs=10, batch_size=128,verbose=1,shuffle = True)
-
-        # active_guard.save('models/active_guard.h5')
-        # fixed_guard.save('models/fixed_guard.h5')
-        # active_guard.save('models/active_guard.h5')
+        if load_model:
+            baseline.load_weights('models/baseline.h5')
+        else:
+            baseline.fit(data,labels,epochs=10, batch_size=128,verbose=1,shuffle = True)
+            baseline.save_weights('models/baseline.h5')
+        #K.clear_session()
+        # train and save models
 
         # test models
         K.set_learning_phase(0)
