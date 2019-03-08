@@ -4,6 +4,7 @@ from sklearn.metrics import recall_score
 from sklearn.metrics import precision_score
 import keras.models
 from main import fail_node
+from random_guess import model_guess
 def iterateFailures( numFailureCombinations, maxNumComponentFailure, debug):   
    for i in range(numFailureCombinations):
         numSurvived = numSurvivedComponents(i)
@@ -18,7 +19,7 @@ def iterateFailures( numFailureCombinations, maxNumComponentFailure, debug):
 
 # runs through all failure configurations for one model
 # prints out result to file
-def iterateFailuresExperiment(surv,numComponents,maxNumComponentFailure,debug,model,accuracyList,weightList,file_name,test_data,test_labels):
+def iterateFailuresExperiment(surv,numComponents,maxNumComponentFailure,debug,model,accuracyList,weightList,file_name,training_labels,test_data,test_labels):
     for i in range(2 ** numComponents):
         numSurvived = numSurvivedComponents(i)
         if ( numSurvived >= numComponents - maxNumComponentFailure ):
@@ -28,10 +29,10 @@ def iterateFailuresExperiment(surv,numComponents,maxNumComponentFailure,debug,mo
             old_weights = model.get_weights()
             fail_node(model,failures)
             print(failures)
-            accuracy = calcModelAccuracy(model,test_data,test_labels)
+            accuracy = calcModelAccuracy(file_name,model,training_labels,test_data,test_labels)
             # change the changed weights to the original weights
             model.set_weights(old_weights)
-            #TODO: fix the weight of the result cuz its not suppose to be negative 
+            # calculate weight of the result based on survival rates 
             weight = calcWeight(surv, listOfZerosOnes)
             accuracyList.append(accuracy)
             weightList.append(weight)
@@ -83,11 +84,13 @@ def convertBinaryToList(number, numBits):
 def calcAccuracy(listOfZerosOnes):
     return test([float(listOfZerosOnes[i]) for i in range(len(listOfZerosOnes))])
 
-def calcModelAccuracy(model,test_data,test_labels):
+def calcModelAccuracy(file_name,model,training_labels,test_data,test_labels):
     preds = model.predict(test_data).argmax(axis=-1)
     precision = precision_score(test_labels,preds,average='micro')
     recall = recall_score(test_labels,preds,average='micro')
-    acc = accuracy_score(test_labels,preds)
+    #acc = accuracy_score(test_labels,preds)
+    # accuracy based on whether the model is fully connected or not 
+    acc = model_guess(model,training_labels,test_data,test_labels,file_name)
     return acc
 
 def normalizeWeights(weights):
@@ -95,13 +98,13 @@ def normalizeWeights(weights):
     weightNormalized = [(x/sumWeights) for x in weights]
     return weightNormalized
  
-def run(file_name,model,surv,test_data,test_labels):
+def run(file_name,model,surv,training_labels,test_data,test_labels):
     numComponents = len(surv)
     maxNumComponentFailure = 3
     debug = True
     accuracyList = []
     weightList = []
-    iterateFailuresExperiment(surv,numComponents, maxNumComponentFailure, debug,model,accuracyList,weightList,file_name,test_data,test_labels)
+    iterateFailuresExperiment(surv,numComponents, maxNumComponentFailure, debug,model,accuracyList,weightList,file_name,training_labels,test_data,test_labels)
     weightList = normalizeWeights(weightList)
     with open(file_name,'a+') as file:
             file.write('Average Accuracy: ' + str(calcAverageAccuracy(accuracyList, weightList)) + '\n')

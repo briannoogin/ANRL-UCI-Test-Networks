@@ -7,7 +7,7 @@ from sklearn.metrics import accuracy_score
 import numpy as np
 
 # use a model with trained weights to guess if there are no connections 
-def model_guess(model,train_labels,test_data,test_labels):
+def model_guess(model,train_labels,test_data,test_labels,file_name = None):
     preds = model.predict(test_data)
     preds = np.argmax(preds,axis=1)
     # check if the connection is 0 which means that there is no data flowing in the network
@@ -20,9 +20,10 @@ def model_guess(model,train_labels,test_data,test_labels):
     if no_connection_flow:
         print("There is no data flow in the network")
         preds = random_guess(train_labels,test_data)
+        if file_name != None:
+            with open(file_name,'a+') as file:
+                file.write('There is no data flow in the network' + '\n')
     acc = accuracy_score(test_labels,preds)
-    print(acc)
-    K.clear_session()
     return acc
 
 # function returns a array of predictions based on random guessing

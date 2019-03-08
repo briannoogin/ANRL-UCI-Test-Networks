@@ -22,7 +22,7 @@ if __name__ == "__main__":
     hidden_units = 250
     for survive_configuration in survive_configurations:
         K.set_learning_phase(1)
-        load_model = False
+        load_model = True
         # create models
         # active guard
         active_guard = define_active_guard_model_with_connections(num_vars,num_classes,hidden_units,0,survive_configuration)
@@ -63,10 +63,10 @@ if __name__ == "__main__":
             file.write(str(survive_configuration) + '\n')
             file.write('ACTIVE GUARD' + '\n')
             print("ACTIVE GUARD")
-            run(file_name,active_guard,survive_configuration,test_data,test_labels)
+            run(file_name,active_guard,survive_configuration,training_labels,test_data,test_labels)
             file.write('FIXED GUARD' + '\n')
             print("FIXED GUARD")
-            run(file_name,fixed_guard,survive_configuration,test_data,test_labels)
+            run(file_name,fixed_guard,survive_configuration,training_labels,test_data,test_labels)
             file.write('BASELINE' + '\n')
             print("BASELINE")
-            run(file_name,baseline,survive_configuration,test_data,test_labels)
+            run(file_name,baseline,survive_configuration,training_labels,test_data,test_labels)
