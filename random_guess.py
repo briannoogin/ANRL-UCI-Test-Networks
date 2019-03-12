@@ -17,14 +17,17 @@ def model_guess(model,train_labels,test_data,test_labels,file_name = None):
     f3_output = output_model.predict(test_data)
     no_connection_flow = np.array_equal(f3_output,f3_output * 0)
     # there is no connection flow, make random guess 
+    # variable that keeps track if the network has failed
+    failure = 0
     if no_connection_flow:
         print("There is no data flow in the network")
         preds = random_guess(train_labels,test_data)
         if file_name != None:
             with open(file_name,'a+') as file:
                 file.write('There is no data flow in the network' + '\n')
+        failure = 1
     acc = accuracy_score(test_labels,preds)
-    return acc
+    return acc,failure
 
 # function returns a array of predictions based on random guessing
 # random guessing is determined by the class distribution from the training data. 
@@ -55,6 +58,7 @@ def guess(cumulative_frequency):
         if rand_num <= cumulative_frequency[index] and rand_num >= cumulative_frequency[index-1]:
             return index
     return 0
+
 
 
         

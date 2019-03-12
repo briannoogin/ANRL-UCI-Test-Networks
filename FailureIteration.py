@@ -20,6 +20,7 @@ def iterateFailures( numFailureCombinations, maxNumComponentFailure, debug):
 # runs through all failure configurations for one model
 # prints out result to file
 def iterateFailuresExperiment(surv,numComponents,maxNumComponentFailure,debug,model,accuracyList,weightList,file_name,training_labels,test_data,test_labels):
+    failure_count = 0
     for i in range(2 ** numComponents):
         numSurvived = numSurvivedComponents(i)
         if ( numSurvived >= numComponents - maxNumComponentFailure ):
@@ -29,16 +30,19 @@ def iterateFailuresExperiment(surv,numComponents,maxNumComponentFailure,debug,mo
             old_weights = model.get_weights()
             fail_node(model,failures)
             print(failures)
-            accuracy = calcModelAccuracy(file_name,model,training_labels,test_data,test_labels)
+            accuracy,failure = calcModelAccuracy(file_name,model,training_labels,test_data,test_labels)
+            # add number of failures for a model
+            failure_count += failure
             # change the changed weights to the original weights
             model.set_weights(old_weights)
             # calculate weight of the result based on survival rates 
             weight = calcWeight(surv, listOfZerosOnes)
             accuracyList.append(accuracy)
             weightList.append(weight)
-            print(" numSurvived:",numSurvived," weight:", weight, " acc:",accuracy)
+            print("numSurvived:",numSurvived," weight:", weight, " acc:",accuracy)
             with open(file_name,'a+') as file:
                 file.write("numSurvived: " + str(numSurvived) + " weight: " + str(weight) + " acc: " + str(accuracy) + '\n')
+    return failure_count
                 
 def calcAverageAccuracy(acuracyList, weightList):
     averageAccuracy = 0
@@ -88,10 +92,9 @@ def calcModelAccuracy(file_name,model,training_labels,test_data,test_labels):
     preds = model.predict(test_data).argmax(axis=-1)
     precision = precision_score(test_labels,preds,average='micro')
     recall = recall_score(test_labels,preds,average='micro')
-    #acc = accuracy_score(test_labels,preds)
     # accuracy based on whether the model is fully connected or not 
-    acc = model_guess(model,training_labels,test_data,test_labels,file_name)
-    return acc
+    acc,failure = model_guess(model,training_labels,test_data,test_labels,file_name)
+    return acc,failure
 
 def normalizeWeights(weights):
     sumWeights = sum(weights)
@@ -104,9 +107,11 @@ def run(file_name,model,surv,training_labels,test_data,test_labels):
     debug = True
     accuracyList = []
     weightList = []
-    iterateFailuresExperiment(surv,numComponents, maxNumComponentFailure, debug,model,accuracyList,weightList,file_name,training_labels,test_data,test_labels)
+    failure_count = iterateFailuresExperiment(surv,numComponents, maxNumComponentFailure, debug,model,accuracyList,weightList,file_name,training_labels,test_data,test_labels)
     weightList = normalizeWeights(weightList)
     with open(file_name,'a+') as file:
+            file.write('Number of Failures: ' + str(failure_count) + '\n')
+            print('Number of Failures',str(failure_count))
             file.write('Average Accuracy: ' + str(calcAverageAccuracy(accuracyList, weightList)) + '\n')
             print("Average Accuracy:", calcAverageAccuracy(accuracyList, weightList))
 # Driver program
@@ -120,5 +125,4 @@ if __name__ == "__main__":
     weightList = []
     iterateFailures(2 ** numComponents, maxNumComponentFailure, debug)
     weightList = normalizeWeights(weightList)
-
     print("Average Accuracy:", calcAverageAccuracy(acuracyList, weightList))
