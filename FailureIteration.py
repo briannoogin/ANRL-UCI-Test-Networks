@@ -111,7 +111,7 @@ def run(file_name,model,surv,training_labels,test_data,test_labels):
     weightList = normalizeWeights(weightList)
     with open(file_name,'a+') as file:
             file.write('Number of Failures: ' + str(failure_count) + '\n')
-            print('Number of Failures',str(failure_count))
+            print('Number of Failures: ',str(failure_count))
             file.write('Average Accuracy: ' + str(calcAverageAccuracy(accuracyList, weightList)) + '\n')
             print("Average Accuracy:", calcAverageAccuracy(accuracyList, weightList))
 # Driver program
