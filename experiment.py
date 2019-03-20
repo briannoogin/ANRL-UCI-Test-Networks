@@ -21,14 +21,14 @@ if __name__ == "__main__":
     ]
     # survibility configurations for active guard basleline
     activeguard_baseline_surviveconfigs = [
-        [.1,.1,.1],
-        [.2,.2,.2],
-        [.3,.3,.3],
-        [.4,.4,.4],
+        [.9,.9,.9],
+        [.8,.8,.8],
+        [.7,.7,.7],
+        [.6,.6,.6],
         [.5,.5,.5],
     ]
     hidden_units = 250
-    load_model = True
+    load_model = False
     now = datetime.datetime.now()
     date = str(now.month) + '-' + str(now.day) + '-' + str(now.year)
     file_name = 'results/' + date + '/results.txt'
@@ -38,7 +38,7 @@ if __name__ == "__main__":
 
         # active guard
         active_guard = define_active_guard_model_with_connections(num_vars,num_classes,hidden_units,0,survive_configuration)
-        active_guard_file = 'models/' + str(survive_configuration) + ' new_active_guard.h5'
+        active_guard_file = 'models/no he_normal/' + str(survive_configuration) + ' new_active_guard.h5'
         if load_model:
             active_guard.load_weights(active_guard_file)
         else:
@@ -47,7 +47,7 @@ if __name__ == "__main__":
 
         # fixed guard
         fixed_guard = define_model_with_nofogbatchnorm_connections_extrainput(num_vars,num_classes,hidden_units,0,survive_configuration)
-        fixed_guard_file = 'models/' + str(survive_configuration) + ' new_fixed_guard.h5'
+        fixed_guard_file = 'models/no he_normal/' + str(survive_configuration) + ' new_fixed_guard.h5'
         if load_model:
             fixed_guard.load_weights(fixed_guard_file)
         else:
@@ -56,16 +56,16 @@ if __name__ == "__main__":
 
         # fixed guard baseline
         baseline_fixed_guard = define_fixed_guard_baseline_model(num_vars,num_classes,hidden_units,0,survive_configuration)
-        baseline_fixed_guard_file = 'models/' + str(survive_configuration) + ' baseline_fixed_guard.h5'
+        baseline_fixed_guard_file = 'models/no he_normal/' + str(survive_configuration) + ' baseline_fixed_guard.h5'
         if load_model:
-            baseline_fixed_guard.load_weights(fixed_guard_file)
+            baseline_fixed_guard.load_weights(baseline_fixed_guard_file)
         else:
             baseline_fixed_guard.fit(data,labels,epochs=10, batch_size=128,verbose=1,shuffle = True)
             baseline_fixed_guard.save_weights(baseline_fixed_guard_file)
 
         # baseline model
         baseline = define_baseline_functional_model(num_vars,num_classes,hidden_units,0)
-        baseline_file = 'models/' + str(survive_configuration) + ' new_baseline.h5'
+        baseline_file = 'models/no he_normal/' + str(survive_configuration) + ' new_baseline.h5'
         if load_model:
             baseline.load_weights(baseline_file)
         else:
@@ -79,24 +79,37 @@ if __name__ == "__main__":
             os.mkdir('results/' + date)
         # write results to a file 
         with open(file_name,'a+') as file:
+            # survival configurations
             print(survive_configuration)
             file.write(str(survive_configuration) + '\n')
+
+            # active guard
             file.write('ACTIVE GUARD' + '\n')
             print("ACTIVE GUARD")
             run(file_name,active_guard,survive_configuration,training_labels,test_data,test_labels)
+            
+            # fixed guard
             file.write('FIXED GUARD' + '\n')
             print("FIXED GUARD")
             run(file_name,fixed_guard,survive_configuration,training_labels,test_data,test_labels)
+
+            # baseline fixed guard
+            file.write('BASELINE FIXED GUARD' + '\n')
+            print("BASELINE FIXED GUARD")
+            run(file_name,baseline_fixed_guard,survive_configuration,training_labels,test_data,test_labels)
+
+            # baseline
             file.write('BASELINE' + '\n')
             print("BASELINE")
             run(file_name,baseline,survive_configuration,training_labels,test_data,test_labels)
+            
     # runs baseline for active guard
     with open(file_name,'a+') as file:
         print("ACTIVE GUARD BASELINE")
         file.write('ACTIVE GUARD BASELINE' + '\n')
     for survive_configuration in activeguard_baseline_surviveconfigs:
         K.set_learning_phase(1)
-        baseline_activeguard_file = 'models/' + str(survive_configuration) + ' baseline_active_guard.h5'
+        baseline_activeguard_file = 'models/no he_normal/' + str(survive_configuration) + ' baseline_active_guard.h5'
         baseline_active_guard_model = define_active_guard_model_with_connections(num_vars,num_classes,hidden_units,0,survive_configuration)
         if load_model:
             baseline_active_guard_model.load_weights(baseline_activeguard_file)

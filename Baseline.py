@@ -29,37 +29,37 @@ def define_baseline_functional_model(num_vars,num_classes,hidden_units,regulariz
 
     # 10 hidden layers, 3 fog nodes
     # first fog node
-    f1 = Dense(units=hidden_units,activity_regularizer=regularizers.l1(regularization),name="fog1_output_layer",kernel_initializer = 'he_normal')(input_layer)
+    f1 = Dense(units=hidden_units,activity_regularizer=regularizers.l1(regularization),name="fog1_output_layer")(input_layer)
     f1 = Activation(activation='relu')(f1)
     f1f2 = multiply_weight_layer_f1f2(f1)
     connection_f2 = Lambda(add_first_node_layers,name="F1_F2")(f1f2)
 
     # second fog node
-    f2 = Dense(units=hidden_units,activity_regularizer=regularizers.l1(regularization),name="fog2_input_layer",kernel_initializer = 'he_normal')(connection_f2)
+    f2 = Dense(units=hidden_units,activity_regularizer=regularizers.l1(regularization),name="fog2_input_layer")(connection_f2)
     f2 = Activation(activation='relu')(f2)
-    f2 = Dense(units=hidden_units,activity_regularizer=regularizers.l1(regularization),name="fog2_output_layer",kernel_initializer = 'he_normal')(f2)
+    f2 = Dense(units=hidden_units,activity_regularizer=regularizers.l1(regularization),name="fog2_output_layer")(f2)
     f2 = Activation(activation='relu')(f2)
     f2f3 = multiply_weight_layer_f2f3(f2)
     connection_f3 = Lambda(add_first_node_layers,name="F1F2_F3")(f2f3)
 
     # third fog node
-    f3 = Dense(units=hidden_units,activity_regularizer=regularizers.l1(regularization),name="fog3_input_layer",kernel_initializer = 'he_normal')(connection_f3)
+    f3 = Dense(units=hidden_units,activity_regularizer=regularizers.l1(regularization),name="fog3_input_layer")(connection_f3)
     f3 = Activation(activation='relu')(f3)
-    f3 = Dense(units=hidden_units,activity_regularizer=regularizers.l1(regularization),name="fog3_layer_1",kernel_initializer = 'he_normal')(f3)
+    f3 = Dense(units=hidden_units,activity_regularizer=regularizers.l1(regularization),name="fog3_layer_1")(f3)
     f3 = Activation(activation='relu')(f3)
-    f3 = Dense(units=hidden_units,activity_regularizer=regularizers.l1(regularization),name="fog3_output_layer",kernel_initializer = 'he_normal')(f3)
+    f3 = Dense(units=hidden_units,activity_regularizer=regularizers.l1(regularization),name="fog3_output_layer")(f3)
     f3 = Activation(activation='relu')(f3)
     f3c = multiply_weight_layer_f3c(f3)
     connection_cloud = Lambda(add_first_node_layers,name="F2F3_FC")(f3c)
 
     # cloud node
-    cloud = Dense(units=hidden_units,activity_regularizer=regularizers.l1(regularization),name="cloud_input_layer",kernel_initializer = 'he_normal')(connection_cloud)
+    cloud = Dense(units=hidden_units,activity_regularizer=regularizers.l1(regularization),name="cloud_input_layer")(connection_cloud)
     cloud = Activation(activation='relu')(cloud)
-    cloud = Dense(units=hidden_units,activity_regularizer=regularizers.l1(regularization),name="cloud_layer_1",kernel_initializer = 'he_normal')(cloud)
+    cloud = Dense(units=hidden_units,activity_regularizer=regularizers.l1(regularization),name="cloud_layer_1")(cloud)
     cloud = Activation(activation='relu')(cloud)
-    cloud = Dense(units=hidden_units,activity_regularizer=regularizers.l1(regularization),name="cloud_layer_2",kernel_initializer = 'he_normal')(cloud)
+    cloud = Dense(units=hidden_units,activity_regularizer=regularizers.l1(regularization),name="cloud_layer_2")(cloud)
     cloud = Activation(activation='relu')(cloud)
-    cloud = Dense(units=hidden_units,activity_regularizer=regularizers.l1(regularization),name="cloud_layer_3",kernel_initializer = 'he_normal')(cloud)
+    cloud = Dense(units=hidden_units,activity_regularizer=regularizers.l1(regularization),name="cloud_layer_3")(cloud)
     cloud = Activation(activation='relu')(cloud)
     # one output layer
     output_layer = Dense(units=num_classes,activation='softmax',name = "output")(cloud)
