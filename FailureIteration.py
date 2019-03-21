@@ -109,11 +109,13 @@ def run(file_name,model,surv,training_labels,test_data,test_labels):
     weightList = []
     failure_count = iterateFailuresExperiment(surv,numComponents, maxNumComponentFailure, debug,model,accuracyList,weightList,file_name,training_labels,test_data,test_labels)
     weightList = normalizeWeights(weightList)
+    avg_acc = calcAverageAccuracy(accuracyList, weightList)
     with open(file_name,'a+') as file:
             file.write('Number of Failures: ' + str(failure_count) + '\n')
             print('Number of Failures: ',str(failure_count))
-            file.write('Average Accuracy: ' + str(calcAverageAccuracy(accuracyList, weightList)) + '\n')
-            print("Average Accuracy:", calcAverageAccuracy(accuracyList, weightList))
+            file.write('Average Accuracy: ' + str(avg_acc) + '\n')
+            print("Average Accuracy:", avg_acc)
+    return avg_acc
 # Driver program
 if __name__ == "__main__":  
     surv = [.99,.96,.92]
