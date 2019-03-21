@@ -19,9 +19,10 @@ def iterateFailures( numFailureCombinations, maxNumComponentFailure, debug):
 
 # runs through all failure configurations for one model
 # prints out result to file
-def iterateFailuresExperiment(surv,numComponents,maxNumComponentFailure,debug,model,accuracyList,weightList,file_name,training_labels,test_data,test_labels):
+def iterateFailuresExperiment(surv,numComponents,model,accuracyList,weightList,file_name,output_list,training_labels,test_data,test_labels):
     failure_count = 0
-    for i in range(2 ** numComponents):
+    maxNumComponentFailure = 2 ** numComponents
+    for i in range(maxNumComponentFailure):
         numSurvived = numSurvivedComponents(i)
         if ( numSurvived >= numComponents - maxNumComponentFailure ):
             listOfZerosOnes = convertBinaryToList(i, numComponents)
@@ -30,7 +31,7 @@ def iterateFailuresExperiment(surv,numComponents,maxNumComponentFailure,debug,mo
             old_weights = model.get_weights()
             fail_node(model,failures)
             print(failures)
-            accuracy,failure = calcModelAccuracy(file_name,model,training_labels,test_data,test_labels)
+            accuracy,failure = calcModelAccuracy(file_name,model,output_list,training_labels,test_data,test_labels)
             # add number of failures for a model
             failure_count += failure
             # change the changed weights to the original weights
@@ -40,6 +41,7 @@ def iterateFailuresExperiment(surv,numComponents,maxNumComponentFailure,debug,mo
             accuracyList.append(accuracy)
             weightList.append(weight)
             print("numSurvived:",numSurvived," weight:", weight, " acc:",accuracy)
+            output_list.append("numSurvived: " + str(numSurvived) + " weight: " + str(weight) + " acc: " + str(accuracy) + '\n')
             with open(file_name,'a+') as file:
                 file.write("numSurvived: " + str(numSurvived) + " weight: " + str(weight) + " acc: " + str(accuracy) + '\n')
     return failure_count
@@ -88,10 +90,10 @@ def convertBinaryToList(number, numBits):
 def calcAccuracy(listOfZerosOnes):
     return test([float(listOfZerosOnes[i]) for i in range(len(listOfZerosOnes))])
 
-def calcModelAccuracy(file_name,model,training_labels,test_data,test_labels):
+def calcModelAccuracy(file_name,model,output_list,training_labels,test_data,test_labels):
     preds = model.predict(test_data).argmax(axis=-1)
-    precision = precision_score(test_labels,preds,average='micro')
-    recall = recall_score(test_labels,preds,average='micro')
+    # precision = precision_score(test_labels,preds,average='micro')
+    # recall = recall_score(test_labels,preds,average='micro')
     # accuracy based on whether the model is fully connected or not 
     acc,failure = model_guess(model,training_labels,test_data,test_labels,file_name)
     return acc,failure
@@ -101,15 +103,15 @@ def normalizeWeights(weights):
     weightNormalized = [(x/sumWeights) for x in weights]
     return weightNormalized
  
-def run(file_name,model,surv,training_labels,test_data,test_labels):
+def run(file_name,model,surv,output_list,training_labels,test_data,test_labels):
     numComponents = len(surv)
-    maxNumComponentFailure = 3
-    debug = True
     accuracyList = []
     weightList = []
-    failure_count = iterateFailuresExperiment(surv,numComponents, maxNumComponentFailure, debug,model,accuracyList,weightList,file_name,training_labels,test_data,test_labels)
+    failure_count = iterateFailuresExperiment(surv,numComponents, model,accuracyList,weightList,file_name,output_list,training_labels,test_data,test_labels)
     weightList = normalizeWeights(weightList)
     avg_acc = calcAverageAccuracy(accuracyList, weightList)
+    output_list.append('Number of Failures: ' + str(failure_count) + '\n')
+    output_list.append('Average Accuracy: ' + str(avg_acc) + '\n')
     with open(file_name,'a+') as file:
             file.write('Number of Failures: ' + str(failure_count) + '\n')
             print('Number of Failures: ',str(failure_count))
