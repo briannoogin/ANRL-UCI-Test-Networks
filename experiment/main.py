@@ -3,8 +3,6 @@ import numpy as np
 np.random.seed(7)
 from tensorflow import set_random_seed
 set_random_seed(2)
-from loadData import load_data
-
 
 import sklearn
 from sklearn.metrics import accuracy_score
@@ -20,10 +18,11 @@ import tensorflow as tf
 import datetime
 import os
 
-from ActiveGuard import define_active_guard_model_with_connections
-from FixedGuard import define_model_with_connections, define_model_with_nofogbatchnorm_connections, define_model_with_nofogbatchnorm_connections_extrainput
-from Baseline import define_baseline_functional_model
-from random_guess import model_guess
+from experiment.ActiveGuard import define_active_guard_model_with_connections
+from experiment.FixedGuard import define_model_with_connections, define_model_with_nofogbatchnorm_connections, define_model_with_nofogbatchnorm_connections_extrainput
+from experiment.Baseline import define_baseline_functional_model
+from experiment.random_guess import model_guess
+from experiment.loadData import load_data
 
 # fails node by making the physical node return 0
 # node_array: bit array, 1 corresponds to alive, 0 corresponds to failure

@@ -1,9 +1,9 @@
-from ActiveGuard import define_active_guard_model_with_connections
-from FixedGuard import define_model_with_nofogbatchnorm_connections_extrainput,define_fixed_guard_baseline_model
-from Baseline import define_baseline_functional_model
-from loadData import load_data
+from experiment.ActiveGuard import define_active_guard_model_with_connections
+from experiment.FixedGuard import define_model_with_nofogbatchnorm_connections_extrainput,define_fixed_guard_baseline_model
+from experiment.Baseline import define_baseline_functional_model
+from experiment.loadData import load_data
 from sklearn.model_selection import train_test_split
-from FailureIteration import run
+from experiment.FailureIteration import run
 import keras.backend as K
 import datetime
 import os
@@ -13,6 +13,11 @@ def average(list):
     return sum(list) / len(list)
 # runs all 3 failure configurations for all 3 models
 if __name__ == "__main__":
+    use_GCP = True
+    if use_GCP == True:
+        os.system('gsutil -m -q cp gs://anrl-storage/data/mHealth_complete.log ./')
+        os.mkdir('models/')
+        os.mkdir('models/no he_normal')
     data,labels= load_data('mHealth_complete.log')
     training_data, test_data, training_labels, test_labels = train_test_split(data,labels,random_state = 42, test_size = .2, shuffle = True,stratify = labels)
     num_vars = len(training_data[0])
@@ -46,7 +51,11 @@ if __name__ == "__main__":
 
     # keep track of output so that output is in order
     output_list = []
-    for iteration in range(1,num_iterations+1):   
+    # make folder for outputs 
+    if not os.path.exists('results/' + date):
+        os.mkdir('results/')
+        os.mkdir('results/' + date)
+    for iteration in range(0,num_iterations):   
         with open(file_name,'a+') as file:
             output_list.append('ITERATION ' + str(iteration) +  '\n')
             file.write('ITERATION ' + str(iteration) +  '\n')
@@ -93,10 +102,6 @@ if __name__ == "__main__":
         
             # test models
             K.set_learning_phase(0)
-
-            # make folder for outputs 
-            if not os.path.exists('results/' + date):
-                os.mkdir('results/' + date)
 
             # write results to a file 
             with open(file_name,'a+') as file:

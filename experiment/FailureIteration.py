@@ -1,10 +1,11 @@
-from main import test
+
 from sklearn.metrics import accuracy_score
 from sklearn.metrics import recall_score
 from sklearn.metrics import precision_score
 import keras.models
-from main import fail_node
-from random_guess import model_guess
+
+from experiment.main import fail_node,test
+from experiment.random_guess import model_guess
 def iterateFailures( numFailureCombinations, maxNumComponentFailure, debug):   
    for i in range(numFailureCombinations):
         numSurvived = numSurvivedComponents(i)

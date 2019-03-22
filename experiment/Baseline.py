@@ -2,8 +2,7 @@ from keras.models import Sequential
 from keras.layers import Dense,Input,add,multiply,Lambda, BatchNormalization, Activation, Dropout
 import keras.backend as K
 import tensorflow as tf
-from LambdaLayers import add_first_node_layers
-from LambdaLayers import add_node_layers
+from experiment.LambdaLayers import add_first_node_layers,add_node_layers
 from keras import regularizers
 from keras import optimizers
 from keras.models import Model

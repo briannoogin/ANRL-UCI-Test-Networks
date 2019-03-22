@@ -1,14 +1,10 @@
 from keras.models import Sequential
 from keras.layers import Dense,Input,add,multiply,Lambda, BatchNormalization, Activation
 import keras.backend as K
-import tensorflow as tf
-from LambdaLayers import add_first_node_layers
-from LambdaLayers import add_node_layers
-from keras import regularizers
-from keras import optimizers
+from experiment.LambdaLayers import add_first_node_layers,add_node_layers
+from keras import regularizers,optimizers
 from keras.models import Model
 from keras.backend import constant
-import numpy as np
 import random 
 
 # returns active guard model with 10 hidden layers

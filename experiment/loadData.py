@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 import sys
 from collections import Counter
-from imblearn.over_sampling import SMOTE
+# from imblearn.over_sampling import SMOTE
 
 # reads in text file from a path and returns data and the labels as numpy arrays
 def load_data(path):
@@ -107,26 +107,26 @@ def removeDuplicates():
     np.savetxt("mHealth_uniques_validation.log", validation_uniques, fmt='%d')
     np.savetxt("mHealth_uniques_test.log", test_uniques, fmt='%d')
 
-# oversamples minority cases to achieve a balanced dataset
-def perform_SMOTE():
-    # read files
-    training_data, training_labels = load_data("mHealth_uniques_train.log")
-    validation_data, validation_labels = load_data("mHealth_uniques_validation.log")
-    test_data, test_labels = load_data("mHealth_uniques_test.log")
-    # perform SMOTE on data
-    training_data, training_labels = SMOTE().fit_resample(training_data,training_labels)
-    validation_data, validation_labels = SMOTE().fit_resample(validation_data,validation_labels)
-    test_data, test_labels = SMOTE().fit_resample(test_data, test_labels)
+# # oversamples minority cases to achieve a balanced dataset
+# def perform_SMOTE():
+#     # read files
+#     training_data, training_labels = load_data("mHealth_uniques_train.log")
+#     validation_data, validation_labels = load_data("mHealth_uniques_validation.log")
+#     test_data, test_labels = load_data("mHealth_uniques_test.log")
+#     # perform SMOTE on data
+#     training_data, training_labels = SMOTE().fit_resample(training_data,training_labels)
+#     validation_data, validation_labels = SMOTE().fit_resample(validation_data,validation_labels)
+#     test_data, test_labels = SMOTE().fit_resample(test_data, test_labels)
 
-    # combine data and labels
-    training_data = np.column_stack((training_data,training_labels))
-    validation_data = np.column_stack((validation_data,validation_labels))
-    test_data = np.column_stack((test_data,test_labels))
+#     # combine data and labels
+#     training_data = np.column_stack((training_data,training_labels))
+#     validation_data = np.column_stack((validation_data,validation_labels))
+#     test_data = np.column_stack((test_data,test_labels))
 
-    # save data
-    # np.savetxt("mHealth_SMOTE_uniques_train.log", training_data, fmt='%d')
-    # np.savetxt("mHealth_SMOTE_uniques_validation.log", validation_data, fmt='%d')
-    # np.savetxt("mHealth_SMOTE_uniques_test.log", test_data, fmt='%d')
+#     # save data
+#     # np.savetxt("mHealth_SMOTE_uniques_train.log", training_data, fmt='%d')
+#     # np.savetxt("mHealth_SMOTE_uniques_validation.log", validation_data, fmt='%d')
+#     # np.savetxt("mHealth_SMOTE_uniques_test.log", test_data, fmt='%d')
 if __name__ == "__main__": 
     #deleteZerosForAllFiles()
     #removeDuplicates()
