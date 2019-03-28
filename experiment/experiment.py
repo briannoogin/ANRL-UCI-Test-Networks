@@ -15,7 +15,7 @@ def average(list):
 if __name__ == "__main__":
     use_GCP = True
     if use_GCP == True:
-        os.system('gsutil -m -q cp gs://anrl-storage/data/mHealth_complete.log ./')
+        os.system('gsutil -m -q cp -r gs://anrl-storage/data/mHealth_complete.log ./')
         os.mkdir('models/')
         os.mkdir('models/no he_normal')
     data,labels= load_data('mHealth_complete.log')
@@ -36,26 +36,55 @@ if __name__ == "__main__":
         [.5,.5,.5],
     ]
     hidden_units = 250
+    batch_size = 1028
     load_model = False
     now = datetime.datetime.now()
     date = str(now.month) + '-' + str(now.day) + '-' + str(now.year)
     file_name = 'results/' + date + '/results.txt'
-    num_iterations = 2
-    
-    # declare list to keep track of accuracy across iterations
-    active_guard_list = [0] * num_iterations
-    fixed_guard_list = [0] * num_iterations
-    baseline_list = [0] * num_iterations
-    baseline_active_guard_list = [0] * num_iterations
-    baseline_fixed_guard_list = [0] * num_iterations
-
+    num_iterations = 1
+    verbose = 0
     # keep track of output so that output is in order
     output_list = []
+    # dictionary to store all the results
+    output = {
+        "Active Guard":
+        {
+            "[0.78, 0.8, 0.85]":[0] * num_iterations,
+            "[0.87, 0.91, 0.95]":[0] * num_iterations,
+            "[0.92, 0.96, 0.99]":[0] * num_iterations,
+        }, 
+        "Fixed Guard":
+        {
+            "[0.78, 0.8, 0.85]":[0] * num_iterations,
+            "[0.87, 0.91, 0.95]":[0] * num_iterations,
+            "[0.92, 0.96, 0.99]":[0] * num_iterations,
+        },
+        "Baseline": 
+        {
+            "[0.78, 0.8, 0.85]":[0] * num_iterations,
+            "[0.87, 0.91, 0.95]":[0] * num_iterations,
+            "[0.92, 0.96, 0.99]":[0] * num_iterations,
+        },
+        "Baseline Fixed Guard": 
+        {
+            "[0.78, 0.8, 0.85]":[0] * num_iterations,
+            "[0.87, 0.91, 0.95]":[0] * num_iterations,
+            "[0.92, 0.96, 0.99]":[0] * num_iterations,
+        },
+        "Baseline Active Guard": 
+        {
+            "[0.9, 0.9, 0.9]":[0] * num_iterations,
+            "[0.8, 0.8, 0.8]":[0] * num_iterations,
+            "[0.7, 0.7, 0.7]":[0] * num_iterations,
+            "[0.6, 0.6, 0.6]":[0] * num_iterations,
+            "[0.5, 0.5, 0.5]":[0] * num_iterations,
+        }
+    }
     # make folder for outputs 
     if not os.path.exists('results/' + date):
         os.mkdir('results/')
         os.mkdir('results/' + date)
-    for iteration in range(0,num_iterations):   
+    for iteration in range(1,num_iterations+1):   
         with open(file_name,'a+') as file:
             output_list.append('ITERATION ' + str(iteration) +  '\n')
             file.write('ITERATION ' + str(iteration) +  '\n')
@@ -66,40 +95,44 @@ if __name__ == "__main__":
 
             # active guard
             active_guard = define_active_guard_model_with_connections(num_vars,num_classes,hidden_units,0,survive_configuration)
-            active_guard_file = 'models/no he_normal/' + str(iteration) + " " + str(survive_configuration) + ' new_active_guard.h5'
+            active_guard_file = str(iteration) + " " + str(survive_configuration) + ' active_guard.h5'
             if load_model:
                 active_guard.load_weights(active_guard_file)
             else:
-                active_guard.fit(data,labels,epochs=10, batch_size=128,verbose=1,shuffle = True)
-                active_guard.save_weights(active_guard_file)
+                print("Training active guard")
+                active_guard.fit(data,labels,epochs=10, batch_size=batch_size,verbose=verbose,shuffle = True)
+                #active_guard.save_weights(active_guard_file)
 
             # fixed guard
             fixed_guard = define_model_with_nofogbatchnorm_connections_extrainput(num_vars,num_classes,hidden_units,0,survive_configuration)
-            fixed_guard_file = 'models/no he_normal/' + str(iteration) + " " +str(survive_configuration) + ' new_fixed_guard.h5'
+            fixed_guard_file = str(iteration) + " " +str(survive_configuration) + ' fixed_guard.h5'
             if load_model:
                 fixed_guard.load_weights(fixed_guard_file)
             else:
-                fixed_guard.fit(data,labels,epochs=10, batch_size=128,verbose=1,shuffle = True)
-                fixed_guard.save_weights(fixed_guard_file)
+                print("Training fixed guard")
+                fixed_guard.fit(data,labels,epochs=10, batch_size=batch_size,verbose=verbose,shuffle = True)
+                #fixed_guard.save_weights(fixed_guard_file)
 
             # fixed guard baseline
             baseline_fixed_guard = define_fixed_guard_baseline_model(num_vars,num_classes,hidden_units,0,survive_configuration)
-            baseline_fixed_guard_file = 'models/no he_normal/' + str(iteration) + " " + str(survive_configuration) + ' baseline_fixed_guard.h5'
+            baseline_fixed_guard_file = str(iteration) + " " + str(survive_configuration) + ' baseline_fixed_guard.h5'
             if load_model:
                 baseline_fixed_guard.load_weights(baseline_fixed_guard_file)
             else:
-                baseline_fixed_guard.fit(data,labels,epochs=10, batch_size=128,verbose=1,shuffle = True)
-                baseline_fixed_guard.save_weights(baseline_fixed_guard_file)
+                print("Training fixed guard baseline")
+                baseline_fixed_guard.fit(data,labels,epochs=10, batch_size=batch_size,verbose=verbose,shuffle = True)
+                #baseline_fixed_guard.save_weights(baseline_fixed_guard_file)
 
             # baseline model
             baseline = define_baseline_functional_model(num_vars,num_classes,hidden_units,0)
-            baseline_file = 'models/no he_normal/' + str(iteration) + " " + str(survive_configuration) + ' new_baseline.h5'
+            baseline_file = str(iteration) + " " + str(survive_configuration) + ' baseline.h5'
             if load_model:
                 baseline.load_weights(baseline_file)
             else:
-                baseline.fit(data,labels,epochs=10, batch_size=128,verbose=1,shuffle = True)
-                baseline.save_weights(baseline_file)
-        
+                print("Training baseline")
+                baseline.fit(data,labels,epochs=10, batch_size=batch_size,verbose=verbose,shuffle = True)
+                #baseline.save_weights(baseline_file)
+
             # test models
             K.set_learning_phase(0)
 
@@ -113,26 +146,30 @@ if __name__ == "__main__":
                 file.write('ACTIVE GUARD' + '\n')
                 output_list.append('ACTIVE GUARD' + '\n')
                 print("ACTIVE GUARD")
-                active_guard_list[iteration] = run(file_name,active_guard,survive_configuration,output_list,training_labels,test_data,test_labels)
-                
+                output["Active Guard"][str(survive_configuration)][iteration-1] = run(file_name,active_guard,survive_configuration,output_list,training_labels,test_data,test_labels)
                 # fixed guard
                 file.write('FIXED GUARD' + '\n')
                 output_list.append('FIXED GUARD' + '\n')
                 print("FIXED GUARD")
-                fixed_guard_list[iteration] = run(file_name,fixed_guard,survive_configuration,output_list,training_labels,test_data,test_labels)
-
+                output["Fixed Guard"][str(survive_configuration)][iteration-1] = run(file_name,fixed_guard,survive_configuration,output_list,training_labels,test_data,test_labels)
                 # baseline fixed guard
                 file.write('BASELINE FIXED GUARD' + '\n')
                 output_list.append('BASELINE FIXED GUARD' + '\n')
                 print("BASELINE FIXED GUARD")
-                baseline_fixed_guard_list[iteration] = run(file_name,baseline_fixed_guard,survive_configuration,output_list,training_labels,test_data,test_labels)
-
+                output["Baseline Fixed Guard"][str(survive_configuration)][iteration-1] = run(file_name,baseline_fixed_guard,survive_configuration,output_list,training_labels,test_data,test_labels)
                 # baseline
                 file.write('BASELINE' + '\n')
                 output_list.append('BASELINE' + '\n')                    
                 print("BASELINE")
-                baseline_list[iteration] = run(file_name,baseline,survive_configuration,output_list,training_labels,test_data,test_labels)
-                
+                output["Baseline"][str(survive_configuration)][iteration-1] = run(file_name,baseline,survive_configuration,output_list,training_labels,test_data,test_labels)
+            # save files to GCP
+            # if use_GCP:
+            #     #os.system('gsutil -m cp -r *.h5 gs://anrl-storage/models')
+            #     # os.system('gsutil -m -q cp -r %s gs://anrl-storage/models' % active_guard_file)
+            #     # os.system('gsutil -m -q cp -r %s gs://anrl-storage/models' % fixed_guard_file)
+            #     # os.system('gsutil -m -q cp -r %s gs://anrl-storage/models' % baseline_fixed_guard_file)
+            #     # os.system('gsutil -m -q cp -r %s gs://anrl-storage/models' % baseline_file)
+
         # runs baseline for active guard
         with open(file_name,'a+') as file:
             file.write('ACTIVE GUARD BASELINE' + '\n')
@@ -140,44 +177,59 @@ if __name__ == "__main__":
         print("ACTIVE GUARD BASELINE")
         for survive_configuration in activeguard_baseline_surviveconfigs:
             K.set_learning_phase(1)
-            baseline_activeguard_file = 'models/no he_normal/' + str(iteration) + " " + str(survive_configuration) + ' baseline_active_guard.h5'
+            baseline_activeguard_file = str(iteration) + " " + str(survive_configuration) + ' baseline_active_guard.h5'
             baseline_active_guard_model = define_active_guard_model_with_connections(num_vars,num_classes,hidden_units,0,survive_configuration)
             if load_model:
                 baseline_active_guard_model.load_weights(baseline_activeguard_file)
             else:
-                baseline_active_guard_model.fit(data,labels,epochs=10, batch_size=128,verbose=1,shuffle = True)
+                print("Training active guard baseline")
+                baseline_active_guard_model.fit(data,labels,epochs=10, batch_size=batch_size,verbose=verbose,shuffle = True)
                 baseline_active_guard_model.save_weights(baseline_activeguard_file)
+                # if use_GCP:
+                #      os.system('gsutil -m -q cp -r %s gs://anrl-storage/models' % baseline_activeguard_file)
             # write results to a file 
             with open(file_name,'a+') as file:
                 print(survive_configuration)
                 file.write(str(survive_configuration)+ '\n')
                 output_list.append(str(survive_configuration)+ '\n')
-                baseline_active_guard_list[iteration] = run(file_name,baseline_active_guard_model,survive_configuration,output_list,training_labels,test_data,test_labels)
-   
+                output["Baseline Active Guard"][str(survive_configuration)][iteration-1] = run(file_name,baseline_active_guard_model,survive_configuration,output_list,training_labels,test_data,test_labels)
+
    # write average accuracies to a file 
     with open(file_name,'a+') as file:
-        active_guard_acc = average(active_guard_list)
-        fixed_guard_acc = average(fixed_guard_list)
-        baseline_acc = average(baseline_list)
-        baseline_active_guard_acc = average(baseline_active_guard_list)
-        baseline_fixed_guard_acc = average(baseline_fixed_guard_list)
+        for survive_configuration in survive_configurations:
+            active_guard_acc = average(output["Baseline"][str(survive_configuration)])
+            fixed_guard_acc = average(output["Baseline"][str(survive_configuration)])
+            baseline_acc = average(output["Baseline"][str(survive_configuration)])
+            baseline_fixed_guard_acc = average(output["Baseline"][str(survive_configuration)])
 
-        file.write(str(active_guard_acc) + '\n')
-        file.write(str(fixed_guard_acc) + '\n')
-        file.write(str(baseline_acc) + '\n')         
-        file.write(str(baseline_active_guard_acc) + '\n')   
-        file.write(str(baseline_fixed_guard_acc) + '\n')
+            file.write(str(active_guard_acc) + '\n')
+            file.write(str(fixed_guard_acc) + '\n')
+            file.write(str(baseline_acc) + '\n')         
+            file.write(str(baseline_fixed_guard_acc) + '\n')
 
-        output_list.append(str(active_guard_acc) + '\n')
-        output_list.append(str(fixed_guard_acc) + '\n')
-        output_list.append(str(baseline_acc) + '\n')
-        output_list.append(str(baseline_active_guard_acc) + '\n')
-        output_list.append(str(baseline_fixed_guard_acc) + '\n')
+            output_list.append(str(survive_configuration) + " ActiveGuard Accuracy: " + str(active_guard_acc) + '\n')
+            output_list.append(str(survive_configuration) + " FixedGuard Accuracy: " + str(fixed_guard_acc) + '\n')
+            output_list.append(str(survive_configuration) + " Baseline Accuracy: " + str(baseline_acc) + '\n')
+            output_list.append(str(survive_configuration) + " Baseline FixedGuard Accuracy: " + str(baseline_fixed_guard_acc) + '\n')
 
-        print("ActiveGuard Accuracy:",active_guard_acc)
-        print("FixedGuard Accuracy:",fixed_guard_acc)
-        print("Baseline Accuracy:",baseline_acc)
-        print("Baseline ActiveGuard Accuracy:",baseline_active_guard_acc)
-        print("Baseline FixedGuard Accuracy:",baseline_fixed_guard_acc)
+            print(str(survive_configuration),"ActiveGuard Accuracy:",active_guard_acc)
+            print(str(survive_configuration),"FixedGuard Accuracy:",fixed_guard_acc)
+            print(str(survive_configuration),"Baseline Accuracy:",baseline_acc)
+            print(str(survive_configuration),"Baseline FixedGuard Accuracy:",baseline_fixed_guard_acc)
 
+        for survive_config in activeguard_baseline_surviveconfigs:
+            baseline_active_guard_acc = average(output["Baseline"][str(survive_configuration)])
+            file.write(str(baseline_active_guard_acc) + '\n')  
+            output_list.append("Baseline ActiveGuard Accuracy: " + str(baseline_active_guard_acc) + '\n')
+            print("Baseline ActiveGuard Accuracy:",baseline_active_guard_acc)  
+        file.flush()
+        os.fsync(file)
+    with open("output.txt",'w') as file:
+        file.write(str(output))
         file.writelines(output_list)
+        file.flush()
+        os.fsync(file)
+    print(output)
+    if use_GCP:
+        os.system('gsutil -m -q cp -r {} gs://anrl-storage/'.format(file_name))
+        os.system('gsutil -m -q cp -r output.txt gs://anrl-storage/')
