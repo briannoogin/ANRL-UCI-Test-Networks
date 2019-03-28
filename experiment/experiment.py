@@ -41,7 +41,7 @@ if __name__ == "__main__":
     now = datetime.datetime.now()
     date = str(now.month) + '-' + str(now.day) + '-' + str(now.year)
     file_name = 'results/' + date + '/results.txt'
-    num_iterations = 1
+    num_iterations = 10
     verbose = 0
     # keep track of output so that output is in order
     output_list = []
@@ -197,10 +197,10 @@ if __name__ == "__main__":
    # write average accuracies to a file 
     with open(file_name,'a+') as file:
         for survive_configuration in survive_configurations:
-            active_guard_acc = average(output["Baseline"][str(survive_configuration)])
-            fixed_guard_acc = average(output["Baseline"][str(survive_configuration)])
+            active_guard_acc = average(output["Active Guard"][str(survive_configuration)])
+            fixed_guard_acc = average(output["Fixed Guard"][str(survive_configuration)])
             baseline_acc = average(output["Baseline"][str(survive_configuration)])
-            baseline_fixed_guard_acc = average(output["Baseline"][str(survive_configuration)])
+            baseline_fixed_guard_acc = average(output["Baseline Fixed Guard"][str(survive_configuration)])
 
             file.write(str(active_guard_acc) + '\n')
             file.write(str(fixed_guard_acc) + '\n')
@@ -218,10 +218,10 @@ if __name__ == "__main__":
             print(str(survive_configuration),"Baseline FixedGuard Accuracy:",baseline_fixed_guard_acc)
 
         for survive_config in activeguard_baseline_surviveconfigs:
-            baseline_active_guard_acc = average(output["Baseline"][str(survive_configuration)])
+            baseline_active_guard_acc = average(output["Baseline Active Guard"][str(survive_configuration)])
             file.write(str(baseline_active_guard_acc) + '\n')  
-            output_list.append("Baseline ActiveGuard Accuracy: " + str(baseline_active_guard_acc) + '\n')
-            print("Baseline ActiveGuard Accuracy:",baseline_active_guard_acc)  
+            output_list.append(str(survive_config) + " Baseline ActiveGuard Accuracy: " + str(baseline_active_guard_acc) + '\n')
+            print(survive_config,"Baseline ActiveGuard Accuracy:",baseline_active_guard_acc)  
         file.flush()
         os.fsync(file)
     with open("output.txt",'w') as file:
