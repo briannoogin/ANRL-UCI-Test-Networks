@@ -17,5 +17,5 @@ gcloud ml-engine jobs submit training $JOB_NAME \
 --region=$REGION \
 --python-version 3.5 \
 --config config.yaml \
---runtime-version 1.12 \
+--runtime-version 1.13 \
 -- \
