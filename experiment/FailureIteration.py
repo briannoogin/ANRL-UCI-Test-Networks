@@ -43,8 +43,8 @@ def iterateFailuresExperiment(surv,numComponents,model,accuracyList,weightList,f
             weightList.append(weight)
             print("numSurvived:",numSurvived," weight:", weight, " acc:",accuracy)
             output_list.append("numSurvived: " + str(numSurvived) + " weight: " + str(weight) + " acc: " + str(accuracy) + '\n')
-            with open(file_name,'a+') as file:
-                file.write("numSurvived: " + str(numSurvived) + " weight: " + str(weight) + " acc: " + str(accuracy) + '\n')
+            # with open(file_name,'a+') as file:
+            #     file.write("numSurvived: " + str(numSurvived) + " weight: " + str(weight) + " acc: " + str(accuracy) + '\n')
     return failure_count
                 
 def calcAverageAccuracy(acuracyList, weightList):
@@ -113,11 +113,13 @@ def run(file_name,model,surv,output_list,training_labels,test_data,test_labels):
     avg_acc = calcAverageAccuracy(accuracyList, weightList)
     output_list.append('Number of Failures: ' + str(failure_count) + '\n')
     output_list.append('Average Accuracy: ' + str(avg_acc) + '\n')
-    with open(file_name,'a+') as file:
-            file.write('Number of Failures: ' + str(failure_count) + '\n')
-            print('Number of Failures: ',str(failure_count))
-            file.write('Average Accuracy: ' + str(avg_acc) + '\n')
-            print("Average Accuracy:", avg_acc)
+    print('Number of Failures: ',str(failure_count))
+    print("Average Accuracy:", avg_acc)
+    # with open(file_name,'a+') as file:
+    #         file.write('Number of Failures: ' + str(failure_count) + '\n')
+    #         
+    #         file.write('Average Accuracy: ' + str(avg_acc) + '\n')
+    #        
     return avg_acc
 # Driver program
 if __name__ == "__main__":  
