@@ -6,12 +6,13 @@ from experiment.FailureIteration import run
 import keras.backend as K
 import datetime
 import os
-
+import gc 
 # function to return average of a list 
 def average(list):
     return sum(list) / len(list)
+
 # runs all hyperconnection configurations for both fixed and active guard survival configurations
-if __name__ == "__main__":
+def main():
     use_GCP = True
     if use_GCP == True:
         os.system('gsutil -m cp -r gs://anrl-storage/data/mHealth_complete.log ./')
@@ -167,7 +168,12 @@ if __name__ == "__main__":
                 output_list.append('FIXED GUARD' + '\n')
                 print("FIXED GUARD")
                 output["Fixed Guard"][str(survive_configuration)][str(hyperconnection)][iteration-1] = run(file_name,fixed_guard,survive_configuration,output_list,training_labels,test_data,test_labels)
-            
+
+                # clear session to remove old graphs from memory so that subsequent training is not slower
+                K.clear_session()
+                gc.collect()
+                del active_guard
+                del fixed_guard
 
    # write average accuracies to a file 
     with open(file_name,'a+') as file:
@@ -185,10 +191,12 @@ if __name__ == "__main__":
 
                 print(str(survive_configuration),str(hyperconnection),"ActiveGuard Accuracy:",active_guard_acc)
                 print(str(survive_configuration),str(hyperconnection),"FixedGuard Accuracy:",fixed_guard_acc)
-        #TODO: remove all file writes to make training faster
         file.writelines(output_list)
         file.flush()
         os.fsync(file)
     print(output)
     if use_GCP:
         os.system('gsutil -m -q cp -r {} gs://anrl-storage/results/'.format(file_name))
+
+if __name__ == "__main__":
+    main()

@@ -92,9 +92,6 @@ def calcAccuracy(listOfZerosOnes):
     return test([float(listOfZerosOnes[i]) for i in range(len(listOfZerosOnes))])
 
 def calcModelAccuracy(file_name,model,output_list,training_labels,test_data,test_labels):
-    preds = model.predict(test_data).argmax(axis=-1)
-    # precision = precision_score(test_labels,preds,average='micro')
-    # recall = recall_score(test_labels,preds,average='micro')
     # accuracy based on whether the model is fully connected or not 
     acc,failure = model_guess(model,training_labels,test_data,test_labels,file_name)
     return acc,failure

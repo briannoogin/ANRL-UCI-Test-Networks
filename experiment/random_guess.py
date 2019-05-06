@@ -30,9 +30,9 @@ def model_guess(model,train_labels,test_data,test_labels,file_name = None):
     if no_connection_flow_f1 or no_connection_flow_f2 or no_connection_flow_f3:
         print("There is no data flow in the network")
         preds = random_guess(train_labels,test_data)
-        if file_name != None:
-            with open(file_name,'a+') as file:
-                file.write('There is no data flow in the network' + '\n')
+        # if file_name != None:
+        #     with open(file_name,'a+') as file:
+        #         file.write('There is no data flow in the network' + '\n')
         failure = 1
     acc = accuracy_score(test_labels,preds)
     return acc,failure
