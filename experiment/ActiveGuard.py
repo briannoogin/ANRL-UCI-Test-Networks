@@ -117,21 +117,23 @@ def define_active_guard_model_with_connections_experiment2(num_vars,num_classes,
     # naming convention:
     # ex: f1f2 = connection between fog node 1 and fog node 2
     # ex: f2c = connection between fog node 2 and cloud node
+    connection_weight_inputf2 = 1
     connection_weight_f1f2 = 1
     connection_weight_f1f3 = 1
     connection_weight_f2f3 = 1
     connection_weight_f2c = 1
     connection_weight_f3c = 1
 
-    # take away the hyperconnectin if the value in hyperconnections array is 0
+    # take away the hyperconnection if the value in hyperconnections array is 0
     if hyperconnections[0] == 0:
-        connection_weight_f1f3 = 0
+        connection_weight_inputf2 = 0
     if hyperconnections[1] == 0:
-        connection_weight_f2c = 0
+        connection_weight_f1f3 = 0
     if hyperconnections[2] == 0:
-        connection_weight_f3c = 0
+        connection_weight_f2c = 0
         
     # define lambdas for multiplying node weights by connection weight
+    multiply_weight_layer_inputf2 = Lambda((lambda x: x * connection_weight_inputf2), name = "connection_weight_inputf2")
     multiply_weight_layer_f1f2 = Lambda((lambda x: x * connection_weight_f1f2), name = "connection_weight_f1f2")
     multiply_weight_layer_f1f3 = Lambda((lambda x: x * connection_weight_f1f3), name = "connection_weight_f1f3")
     multiply_weight_layer_f2f3 = Lambda((lambda x: x * connection_weight_f2f3), name = "connection_weight_f2f3")
@@ -169,7 +171,8 @@ def define_active_guard_model_with_connections_experiment2(num_vars,num_classes,
     f1 = f1_failure_lambda(f1)
     f1f2 = multiply_weight_layer_f1f2(f1)
     duplicated_input = Dense(units=hidden_units,name="duplicated_input",activation='linear')(input_layer)
-    connection_f2 = Lambda(add_node_layers,name="F1_F2")([f1f2,duplicated_input])
+    input_f2 = multiply_weight_layer_inputf2(duplicated_input)
+    connection_f2 = Lambda(add_node_layers,name="F1_F2")([f1f2,input_f2])
 
     # second fog node
     f2 = Dense(units=hidden_units,activation='linear',kernel_regularizer=regularizers.l2(regularization),name="fog2_input_layer")(connection_f2)

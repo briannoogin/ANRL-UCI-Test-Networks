@@ -7,7 +7,7 @@ import keras.backend as K
 import datetime
 import os
 import gc 
-# function to return average of a list 
+# function to return average a list 
 def average(list):
     return sum(list) / len(list)
 
@@ -178,7 +178,9 @@ def main():
    # write average accuracies to a file 
     with open(file_name,'a+') as file:
         for survive_configuration in survive_configurations:
+            output_list.append(str(survive_configuration) + '\n')
             for hyperconnection in hyperconnections:
+                output_list.append(str(hyperconnection) + '\n')
                 active_guard_acc = average(output["Active Guard"][str(survive_configuration)][str(hyperconnection)])
                 fixed_guard_acc = average(output["Fixed Guard"][str(survive_configuration)][str(hyperconnection)])
             
