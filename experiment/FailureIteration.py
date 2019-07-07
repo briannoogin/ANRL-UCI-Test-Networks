@@ -6,6 +6,7 @@ import keras.models
 
 from experiment.main import fail_node,test
 from experiment.random_guess import model_guess
+
 def iterateFailures( numFailureCombinations, maxNumComponentFailure, debug):   
    for i in range(numFailureCombinations):
         numSurvived = numSurvivedComponents(i)

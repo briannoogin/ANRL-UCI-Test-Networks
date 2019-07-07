@@ -60,8 +60,8 @@ def define_active_guard_model_with_connections(num_vars,num_classes,hidden_units
     #f1 = BatchNormalization()(f1)
     f1 = f1_failure_lambda(f1)
     f1f2 = multiply_weight_layer_f1f2(f1)
-    duplicated_input = Dense(units=hidden_units,name="duplicated_input",activation='linear')(input_layer)
-    connection_f2 = Lambda(add_node_layers,name="F1_F2")([f1f2,duplicated_input])
+    highway_input = Dense(units=hidden_units,name="highway_input",activation='linear')(input_layer)
+    connection_f2 = Lambda(add_node_layers,name="F1_F2")([f1f2,highway_input])
 
     # second fog node
     f2 = Dense(units=hidden_units,activation='linear',kernel_regularizer=regularizers.l2(regularization),name="fog2_input_layer")(connection_f2)
@@ -108,7 +108,6 @@ def define_active_guard_model_with_connections(num_vars,num_classes,hidden_units
 
     model = Model(inputs=input_layer, outputs=normal_output_layer)
     # TODO: define custom metric to keep track of network failing during training
-    sgd = optimizers.SGD(lr=0.01, decay=1e-6, momentum=0.9, nesterov=True)
     model.compile(loss='sparse_categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
     return model
 
@@ -170,8 +169,8 @@ def define_active_guard_model_with_connections_experiment2(num_vars,num_classes,
     #f1 = BatchNormalization()(f1)
     f1 = f1_failure_lambda(f1)
     f1f2 = multiply_weight_layer_f1f2(f1)
-    duplicated_input = Dense(units=hidden_units,name="duplicated_input",activation='linear')(input_layer)
-    input_f2 = multiply_weight_layer_inputf2(duplicated_input)
+    highway_input = Dense(units=hidden_units,name="highway_input",activation='linear')(input_layer)
+    input_f2 = multiply_weight_layer_inputf2(highway_input)
     connection_f2 = Lambda(add_node_layers,name="F1_F2")([f1f2,input_f2])
 
     # second fog node

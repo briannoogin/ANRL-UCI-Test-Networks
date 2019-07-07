@@ -12,6 +12,7 @@ def average(list):
     return sum(list) / len(list)
 
 # runs all hyperconnection configurations for both fixed and active guard survival configurations
+# sensitivity analysis 
 def main():
     use_GCP = True
     if use_GCP == True:
@@ -25,7 +26,8 @@ def main():
     survive_configurations = [
         [.78,.8,.85],
         [.87,.91,.95],
-        [.92,.96,.99]
+        [.92,.96,.99],
+        [1,1,1]
     ]
     hyperconnections = [
         [0,0,0],
@@ -33,6 +35,7 @@ def main():
         [0,1,0],
         [0,0,1],
         [1,1,0],
+        [1,0,1],
         [0,1,1],
         [1,1,1],
     ]
@@ -41,8 +44,8 @@ def main():
     load_model = False
     now = datetime.datetime.now()
     date = str(now.month) + '-' + str(now.day) + '-' + str(now.year)
-    file_name = 'results/' + date + '/experiment2_results.txt'
-    num_iterations = 1
+    file_name = 'results/' + date + '/experiment2_results16_20.txt'
+    num_iterations = 5
     verbose = 0
     # keep track of output so that output is in order
     output_list = []
@@ -57,6 +60,7 @@ def main():
                 "[0, 1, 0]":[0] * num_iterations,
                 "[0, 0, 1]":[0] * num_iterations,
                 "[1, 1, 0]":[0] * num_iterations,
+                "[1, 0, 1]":[0] * num_iterations,
                 "[0, 1, 1]":[0] * num_iterations,
                 "[1, 1, 1]":[0] * num_iterations
             },
@@ -67,6 +71,7 @@ def main():
                 "[0, 1, 0]":[0] * num_iterations,
                 "[0, 0, 1]":[0] * num_iterations,
                 "[1, 1, 0]":[0] * num_iterations,
+                "[1, 0, 1]":[0] * num_iterations,
                 "[0, 1, 1]":[0] * num_iterations,
                 "[1, 1, 1]":[0] * num_iterations
             },
@@ -77,6 +82,7 @@ def main():
                 "[0, 1, 0]":[0] * num_iterations,
                 "[0, 0, 1]":[0] * num_iterations,
                 "[1, 1, 0]":[0] * num_iterations,
+                "[1, 0, 1]":[0] * num_iterations,
                 "[0, 1, 1]":[0] * num_iterations,
                 "[1, 1, 1]":[0] * num_iterations
             },
@@ -90,6 +96,7 @@ def main():
                 "[0, 1, 0]":[0] * num_iterations,
                 "[0, 0, 1]":[0] * num_iterations,
                 "[1, 1, 0]":[0] * num_iterations,
+                "[1, 0, 1]":[0] * num_iterations,
                 "[0, 1, 1]":[0] * num_iterations,
                 "[1, 1, 1]":[0] * num_iterations
             },
@@ -100,6 +107,7 @@ def main():
                 "[0, 1, 0]":[0] * num_iterations,
                 "[0, 0, 1]":[0] * num_iterations,
                 "[1, 1, 0]":[0] * num_iterations,
+                "[1, 0, 1]":[0] * num_iterations,
                 "[0, 1, 1]":[0] * num_iterations,
                 "[1, 1, 1]":[0] * num_iterations
             },
@@ -110,6 +118,7 @@ def main():
                 "[0, 1, 0]":[0] * num_iterations,
                 "[0, 0, 1]":[0] * num_iterations,
                 "[1, 1, 0]":[0] * num_iterations,
+                "[1, 0, 1]":[0] * num_iterations,
                 "[0, 1, 1]":[0] * num_iterations,
                 "[1, 1, 1]":[0] * num_iterations
             },
