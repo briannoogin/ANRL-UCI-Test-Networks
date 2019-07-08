@@ -10,7 +10,6 @@ def add_node_layers(input_tensors):
     output = []
     for tensors in input_tensors:
        output.append(tensors)
-    # TODO: check for NaNs, used for failure cases
     return add(output)
 
 # lambda function to add the beginning physical node in the network

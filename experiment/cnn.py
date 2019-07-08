@@ -57,6 +57,8 @@ from __future__ import division
 import os
 import warnings
 
+import keras.backend as K
+from keras.backend import zeros
 from keras_applications.imagenet_utils import _obtain_input_shape, get_submodules_from_kwargs
 from keras_applications import imagenet_utils
 import keras 
@@ -214,9 +216,10 @@ def baseline_ANRL_MobileNet(input_shape=None,
             img_input = input_tensor
   
     # changed the strides from 2 to 1 since cifar-10 images are smaller
+    # IoT Node
+    iot = _conv_block(img_input, 32, alpha, strides=(1, 1))
     # edge 
-    edge = _conv_block(img_input, 32, alpha, strides=(1, 1))
-    edge = _depthwise_conv_block(edge, 64, alpha, depth_multiplier, block_id=1)
+    edge = _depthwise_conv_block(iot, 64, alpha, depth_multiplier, block_id=1)
 
     edge = _depthwise_conv_block(edge, 128, alpha, depth_multiplier,
                               strides=(1, 1), block_id=2)
@@ -248,6 +251,7 @@ def baseline_ANRL_MobileNet(input_shape=None,
 
         cloud = layers.GlobalAveragePooling2D()(cloud)
         cloud = layers.Reshape(shape, name='reshape_1')(cloud)
+        # dropout is only in the cloud node, we can potentially use it
         cloud = layers.Dropout(dropout, name='dropout')(cloud)
         cloud = layers.Conv2D(classes, (1, 1),
                           padding='same',
@@ -299,7 +303,7 @@ def baseline_ANRL_MobileNet(input_shape=None,
 
     return model
 
-def skiphyperconnections_ANRL_MobileNet(input_shape=None,
+def skipconnections_ANRL_MobileNet(input_shape=None,
               alpha=1.0,
               depth_multiplier=1,
               dropout=1e-3,
@@ -431,30 +435,39 @@ def skiphyperconnections_ANRL_MobileNet(input_shape=None,
             img_input = layers.Input(tensor=input_tensor, shape=input_shape)
         else:
             img_input = input_tensor
-  
     # changed the strides from 2 to 1 since cifar-10 images are smaller
-    x = _conv_block(img_input, 32, alpha, strides=(1, 1))
-    x = _depthwise_conv_block(x, 64, alpha, depth_multiplier, block_id=1)
+    # IoT node
+    iot = _conv_block(img_input, 32, alpha, strides=(1, 1))
+    # edge 
+    edge = _depthwise_conv_block(iot, 64, alpha, depth_multiplier, block_id=1)
 
-    x = _depthwise_conv_block(x, 128, alpha, depth_multiplier,
+    edge = _depthwise_conv_block(edge, 128, alpha, depth_multiplier,
                               strides=(1, 1), block_id=2)
-    x = _depthwise_conv_block(x, 128, alpha, depth_multiplier, block_id=3)
+    connection_edgefog = _depthwise_conv_block(edge, 128, alpha, depth_multiplier, block_id=3) # size:  (None, 31, 31, 64) 
+    # skip hyperconnection, used 1x1 convolution to project shape of node output into (7,7,256)
+    connection_edgecloud = layers.Conv2D(256,(1,1),strides = 4, use_bias = False, name = "skip_hyperconnection_edgecloud")(connection_edgefog)
 
-    x = _depthwise_conv_block(x, 256, alpha, depth_multiplier,
+    # fog node
+    fog = _depthwise_conv_block(connection_edgefog, 256, alpha, depth_multiplier, # size: (None, 32, 32, 64)
                               strides=(2, 2), block_id=4)
-    x = _depthwise_conv_block(x, 256, alpha, depth_multiplier, block_id=5)
+    fog = _depthwise_conv_block(fog, 256, alpha, depth_multiplier, block_id=5)
 
-    x = _depthwise_conv_block(x, 512, alpha, depth_multiplier,
+    fog = _depthwise_conv_block(fog, 512, alpha, depth_multiplier,
                               strides=(2, 2), block_id=6)
-    x = _depthwise_conv_block(x, 512, alpha, depth_multiplier, block_id=7)
-    x = _depthwise_conv_block(x, 512, alpha, depth_multiplier, block_id=8)
-    x = _depthwise_conv_block(x, 512, alpha, depth_multiplier, block_id=9)
-    x = _depthwise_conv_block(x, 512, alpha, depth_multiplier, block_id=10)
-    x = _depthwise_conv_block(x, 512, alpha, depth_multiplier, block_id=11)
+    fog = _depthwise_conv_block(fog, 512, alpha, depth_multiplier, block_id=7)
+    fog = _depthwise_conv_block(fog, 512, alpha, depth_multiplier, block_id=8) #size : (None, 7, 7, 256) 
+    # pad from (7,7,256) to (8,8,256)
+    connection_fogcloud = layers.ZeroPadding2D(padding = ((0, 1), (0, 1)), name = "cloud_connection_padding")(fog)
+    connection_cloud = layers.add([connection_fogcloud,connection_edgecloud], name = "connection_cloud")
 
-    x = _depthwise_conv_block(x, 1024, alpha, depth_multiplier,
+    # cloud node
+    cloud = _depthwise_conv_block(connection_cloud, 512, alpha, depth_multiplier, block_id=9) # size: (None, 7, 7, 256)
+    cloud = _depthwise_conv_block(cloud, 512, alpha, depth_multiplier, block_id=10)
+    cloud = _depthwise_conv_block(cloud, 512, alpha, depth_multiplier, block_id=11)
+
+    cloud = _depthwise_conv_block(cloud, 1024, alpha, depth_multiplier,
                               strides=(2, 2), block_id=12)
-    x = _depthwise_conv_block(x, 1024, alpha, depth_multiplier, block_id=13)
+    cloud = _depthwise_conv_block(cloud, 1024, alpha, depth_multiplier, block_id=13)
 
     if include_top:
         if backend.image_data_format() == 'channels_first':
@@ -462,19 +475,20 @@ def skiphyperconnections_ANRL_MobileNet(input_shape=None,
         else:
             shape = (1, 1, int(1024 * alpha))
 
-        x = layers.GlobalAveragePooling2D()(x)
-        x = layers.Reshape(shape, name='reshape_1')(x)
-        x = layers.Dropout(dropout, name='dropout')(x)
-        x = layers.Conv2D(classes, (1, 1),
+        cloud = layers.GlobalAveragePooling2D()(cloud)
+        cloud = layers.Reshape(shape, name='reshape_1')(cloud)
+        # dropout is only in the cloud node, we can potentially use it
+        cloud = layers.Dropout(dropout, name='dropout')(cloud)
+        cloud = layers.Conv2D(classes, (1, 1),
                           padding='same',
-                          name='conv_preds')(x)
-        x = layers.Reshape((classes,), name='reshape_2')(x)
-        x = layers.Activation('softmax', name='act_softmax')(x)
+                          name='conv_preds')(cloud)
+        cloud = layers.Reshape((classes,), name='reshape_2')(cloud)
+        cloud = layers.Activation('softmax', name='act_softmax')(cloud)
     else:
         if pooling == 'avg':
-            x = layers.GlobalAveragePooling2D()(x)
+            cloud = layers.GlobalAveragePooling2D()(cloud)
         elif pooling == 'max':
-            x = layers.GlobalMaxPooling2D()(x)
+            cloud = layers.GlobalMaxPooling2D()(cloud)
 
     # Ensure that the model takes into account
     # any potential predecessors of `input_tensor`.
@@ -484,7 +498,7 @@ def skiphyperconnections_ANRL_MobileNet(input_shape=None,
         inputs = img_input
 
     # Create model.
-    model = keras.Model(inputs, x, name='mobilenet_%0.2f_%s' % (alpha, rows))
+    model = keras.Model(inputs, cloud, name='mobilenet_%0.2f_%s' % (alpha, rows))
 
     # Load weights.
     if weights == 'imagenet':
@@ -514,6 +528,7 @@ def skiphyperconnections_ANRL_MobileNet(input_shape=None,
         model.load_weights(weights)
 
     return model
+
 def _conv_block(inputs, filters, alpha, kernel=(3, 3), strides=(1, 1)):
     """Adds an initial convolution layer (with batch normalization and relu6).
 
