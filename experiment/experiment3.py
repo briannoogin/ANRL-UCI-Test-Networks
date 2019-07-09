@@ -41,11 +41,29 @@ def main():
 def fail_cnn_node():
         # get cifar10 data 
         (x_train, y_train), (x_test, y_test) = cifar10.load_data()
+        x_test = x_test / 255
         file_name = "models_GitHubANRL_cnn_skiphyperconnection_weights_alpha050_fixedstrides_dataaugmentation.h5"
         model = skipconnections_ANRL_MobileNet(weights = None,classes=10,input_shape = (32,32,3),dropout = 0, alpha = .5)
         model.load_weights(file_name)
         model.compile(loss='sparse_categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
-        layer_name = "conv_pw_3"
+        layer_name = "conv_pw_8"
+        layer = model.get_layer(name=layer_name)
+        layer_weights = layer.get_weights()
+        # make new weights for the connections
+        new_weights = np.zeros(layer_weights[0].shape)
+        #new_bias_weights[:] = np.nan # set weights to nan
+        layer.set_weights([new_weights])
+        print(layer_name, "was failed")
+        print(model.evaluate(x_test,y_test))
+def fail_hyperconnection():
+       # get cifar10 data 
+        (x_train, y_train), (x_test, y_test) = cifar10.load_data()
+        x_test = x_test / 255
+        file_name = "models_GitHubANRL_cnn_skiphyperconnection_weights_alpha050_fixedstrides_dataaugmentation.h5"
+        model = skipconnections_ANRL_MobileNet(weights = None,classes=10,input_shape = (32,32,3),dropout = 0, alpha = .5)
+        model.load_weights(file_name)
+        model.compile(loss='sparse_categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
+        layer_name = "skip_hyperconnection_edgecloud"
         layer = model.get_layer(name=layer_name)
         layer_weights = layer.get_weights()
         # make new weights for the connections
@@ -58,4 +76,5 @@ def fail_cnn_node():
 if __name__ == "__main__":
     #main()
     fail_cnn_node()
+    #fail_hyperconnection()
     #view_model()
