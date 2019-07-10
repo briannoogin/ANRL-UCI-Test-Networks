@@ -672,7 +672,7 @@ def skipconnections_dropout_ANRL_MobileNet(input_shape=None,
     edge_survive_rate = K.variable(survive_rates[0])
     fog_survive_rate = K.variable(survive_rates[1])
     # set training phase to true 
-    K.set_learning_phase(0)
+    K.set_learning_phase(1)
     if K.learning_phase():
         # seeds so the random_number is different for each fog node 
         edge_rand = K.random_uniform(shape=edge_rand.shape,seed=7)
