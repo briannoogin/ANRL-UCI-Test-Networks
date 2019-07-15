@@ -111,7 +111,7 @@ def define_active_guard_model_with_connections(num_vars,num_classes,hidden_units
     model.compile(loss='sparse_categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
     return model
 
-def define_active_guard_model_with_connections_experiment2(num_vars,num_classes,hidden_units,regularization,survive_rates,hyperconnections):
+def define_active_guard_model_with_connections_hyperconnectionweight1(num_vars,num_classes,hidden_units,regularization,survive_rates,hyperconnections):
     # calculate connection weights
     # naming convention:
     # ex: f1f2 = connection between fog node 1 and fog node 2

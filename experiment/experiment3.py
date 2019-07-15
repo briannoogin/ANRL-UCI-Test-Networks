@@ -30,7 +30,7 @@ def main():
     horizontal_flip=True,
     )
     survive_configs = [
-        [.96,98],
+        [.96,.98],
         [.90,.95],
         [.80,.85],
         [1,1]
@@ -53,7 +53,7 @@ def main():
         os.mkdir('results/' + date)
     file_name = 'results/' + date + '/experiment3_dropoutexperiment_results_test.txt'
     for iteration in range(1,num_iterations+1):
-        model_name = "GitHubANRL_cnn_fullskiphyperconnectiondropout_mediumconfig_weights_alpha050_fixedstrides_dataaugmentation.h5"
+        model_name = "GitHubANRL_cnn_dropout_10dropout_weights_alpha050_fixedstrides_dataaugmentation" + str(iteration) + ".h5"
         checkpoint = ModelCheckpoint(model_name,verbose=1,save_best_only=True,save_weights_only = True)
         #model = baseline_ANRL_MobileNet(weights = None,classes=10,input_shape = (32,32,3),dropout = 0, alpha = .5)
         #model = skipconnections_ANRL_MobileNet(weights = None,classes=10,input_shape = (32,32,3),dropout = 0, alpha = .5)
@@ -63,8 +63,7 @@ def main():
         num_samples = len(x_train)
         batch_size = 128
         steps_per_epoch = math.ceil(num_samples / batch_size)
-        model.fit_generator(datagen.flow(x_train,y_train,batch_size = batch_size),epochs = 75,validation_data = (x_test,y_test), steps_per_epoch = steps_per_epoch, verbose = 2,callbacks = [checkpoint])
-        model.save_weights(model_name)
+        #model.fit_generator(datagen.flow(x_train,y_train,batch_size = batch_size),epochs = 75,validation_data = (x_test,y_test), steps_per_epoch = steps_per_epoch, verbose = 2,callbacks = [checkpoint])
         output_list = []
         for survive_config in survive_configs:
             output_list.append(str(survive_config) + '\n')
@@ -72,18 +71,16 @@ def main():
             output["Active Guard"][str(survive_config)][iteration-1] = run(" ",model, survive_config,output_list, y_train, x_test, y_test)
         with open(file_name,'a+') as file:
             for survive_config in survive_configs:
-                output_list.append(str(survive_configs) + '\n')
-                active_guard_acc = average(output["Active Guard"][str(survive_configs)])
-                output_list.append(str(survive_configs) + " .1 Dropout Accuracy: " + str(active_guard_acc) + '\n')
-                print(str(survive_configs),".1 Dropout Accuracy:",active_guard_acc)
+                output_list.append(str(survive_config) + '\n')
+                active_guard_acc = average(output["Active Guard"][str(survive_config)])
+                output_list.append(str(survive_config) + " .1 Dropout Accuracy: " + str(active_guard_acc) + '\n')
+                print(str(survive_config),".1 Dropout Accuracy:",active_guard_acc)
             file.writelines(output_list)
             file.flush()
             os.fsync(file)
         use_GCP = True
         if use_GCP:
-            os.system('gsutil -m -q cp -r {} gs://anrl-storage/results/'.format(model_name))
-        # print(str(survive_config),".1 Dropout Accuracy:",dropout_results)
-        os.system('gsutil -m -q cp -r *.h5 gs://anrl-storage/models')
+            os.system('gsutil -m -q cp -r *.h5 gs://anrl-storage/models')
 
 def fail_cnn_node():
         # get cifar10 data 
@@ -150,8 +147,8 @@ def fail_hyperconnection():
         print(model.evaluate(x_test,y_test))
 # cnn experiment 
 if __name__ == "__main__":
-    #main()
+    main()
     #fail_cnn_node()
-    fail_cnn_node_experiment2()
+    #fail_cnn_node_experiment2()
     #fail_hyperconnection()
     #view_model()

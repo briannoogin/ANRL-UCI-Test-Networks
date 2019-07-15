@@ -445,10 +445,12 @@ def skipconnections_ANRL_MobileNet(input_shape=None,
 
     edge = _depthwise_conv_block(edge, 128, alpha, depth_multiplier,
                               strides=(1, 1), block_id=2)
-    connection_edgefog = _depthwise_conv_block(edge, 128, alpha, depth_multiplier, block_id=3) # size:  (None, 31, 31, 64) 
+    connection_edgefog = _depthwise_conv_block(edge, 128, alpha, depth_multiplier, block_id=3) # size:  (None, 31, 31, 64)
+    # dummy layer used to name the output of the node
+    connection_edgefog = layers.Lambda(lambda x: x * 1, name = "connection_edgefog")(connection_edgefog)
     # skip hyperconnection, used 1x1 convolution to project shape of node output into (7,7,256)
     connection_edgecloud = layers.Conv2D(256,(1,1),strides = 4, use_bias = False, name = "skip_hyperconnection_edgecloud")(connection_edgefog)
-    connection_fog = layers.add([connection_iotfog,connection_edgefog])
+    connection_fog = layers.add([connection_iotfog,connection_edgefog], name = "connection_fog")
 
     # fog node
     fog = _depthwise_conv_block(connection_fog, 256, alpha, depth_multiplier, # size: (None, 32, 32, 64)
@@ -460,7 +462,7 @@ def skipconnections_ANRL_MobileNet(input_shape=None,
     fog = _depthwise_conv_block(fog, 512, alpha, depth_multiplier, block_id=7)
     fog = _depthwise_conv_block(fog, 512, alpha, depth_multiplier, block_id=8) #size : (None, 7, 7, 256) 
     # pad from (7,7,256) to (8,8,256)
-    connection_fogcloud = layers.ZeroPadding2D(padding = ((0, 1), (0, 1)), name = "cloud_connection_padding")(fog)
+    connection_fogcloud = layers.ZeroPadding2D(padding = ((0, 1), (0, 1)), name = "fogcloud_connection_padding")(fog)
     connection_cloud = layers.add([connection_fogcloud,connection_edgecloud], name = "connection_cloud")
 
     # cloud node
@@ -692,10 +694,13 @@ def skipconnections_dropout_ANRL_MobileNet(input_shape=None,
     edge = _depthwise_conv_block(edge, 128, alpha, depth_multiplier,
                               strides=(1, 1), block_id=2)
     connection_edgefog = _depthwise_conv_block(edge, 128, alpha, depth_multiplier, block_id=3) # size:  (None, 31, 31, 64) 
+    # dummy layer used to name the output of the node
+    connection_edgefog = layers.Lambda(lambda x: x * 1, name = "connection_edgefog")(connection_edgefog)
     connection_edgefog = edge_failure_lambda(connection_edgefog)
-    # skip hyperconnection, used 1x1 convolution to project shape of node output into (7,7,256)
+    # skip hyperconnection, used 1x1 convolution to project shape of node output into (7,7,256)\
+    # check it back to normal skip_hyperconnection
     connection_edgecloud = layers.Conv2D(256,(1,1),strides = 4, use_bias = False, name = "skip_hyperconnection_edgecloud")(connection_edgefog)
-    connection_fog = layers.add([connection_iotfog,connection_edgefog])
+    connection_fog = layers.add([connection_iotfog,connection_edgefog], name = "connection_fog")
     
     # fog node
     fog = _depthwise_conv_block(connection_fog, 256, alpha, depth_multiplier, # size: (None, 32, 32, 64)
@@ -707,7 +712,7 @@ def skipconnections_dropout_ANRL_MobileNet(input_shape=None,
     fog = _depthwise_conv_block(fog, 512, alpha, depth_multiplier, block_id=7)
     fog = _depthwise_conv_block(fog, 512, alpha, depth_multiplier, block_id=8) #size : (None, 7, 7, 256) 
     # pad from (7,7,256) to (8,8,256)
-    connection_fogcloud = layers.ZeroPadding2D(padding = ((0, 1), (0, 1)), name = "cloud_connection_padding")(fog)
+    connection_fogcloud = layers.ZeroPadding2D(padding = ((0, 1), (0, 1)), name = "fogcloud_connection_padding")(fog)
     connection_fogcloud = fog_failure_lambda(connection_fogcloud)
     connection_cloud = layers.add([connection_fogcloud,connection_edgecloud], name = "connection_cloud")
 
