@@ -224,7 +224,7 @@ def baseline_ANRL_MobileNet(input_shape=None,
     edge = _depthwise_conv_block(edge, 128, alpha, depth_multiplier,
                               strides=(1, 1), block_id=2)
     edge = _depthwise_conv_block(edge, 128, alpha, depth_multiplier, block_id=3)
-
+   
     # fog node
     fog = _depthwise_conv_block(edge, 256, alpha, depth_multiplier,
                               strides=(2, 2), block_id=4)
@@ -234,6 +234,8 @@ def baseline_ANRL_MobileNet(input_shape=None,
                               strides=(2, 2), block_id=6)
     fog = _depthwise_conv_block(fog, 512, alpha, depth_multiplier, block_id=7)
     fog = _depthwise_conv_block(fog, 512, alpha, depth_multiplier, block_id=8)
+    # dummy layer to name output
+    fog = layers.Lambda(lambda x : x * 1,name = 'connection_cloud')(fog)
     # cloud node
     cloud = _depthwise_conv_block(fog, 512, alpha, depth_multiplier, block_id=9)
     cloud = _depthwise_conv_block(cloud, 512, alpha, depth_multiplier, block_id=10)
@@ -446,8 +448,7 @@ def skipconnections_ANRL_MobileNet(input_shape=None,
     edge = _depthwise_conv_block(edge, 128, alpha, depth_multiplier,
                               strides=(1, 1), block_id=2)
     connection_edgefog = _depthwise_conv_block(edge, 128, alpha, depth_multiplier, block_id=3) # size:  (None, 31, 31, 64)
-    # dummy layer used to name the output of the node
-    connection_edgefog = layers.Lambda(lambda x: x * 1, name = "connection_edgefog")(connection_edgefog)
+    
     # skip hyperconnection, used 1x1 convolution to project shape of node output into (7,7,256)
     connection_edgecloud = layers.Conv2D(256,(1,1),strides = 4, use_bias = False, name = "skip_hyperconnection_edgecloud")(connection_edgefog)
     connection_fog = layers.add([connection_iotfog,connection_edgefog], name = "connection_fog")
@@ -694,8 +695,6 @@ def skipconnections_dropout_ANRL_MobileNet(input_shape=None,
     edge = _depthwise_conv_block(edge, 128, alpha, depth_multiplier,
                               strides=(1, 1), block_id=2)
     connection_edgefog = _depthwise_conv_block(edge, 128, alpha, depth_multiplier, block_id=3) # size:  (None, 31, 31, 64) 
-    # dummy layer used to name the output of the node
-    connection_edgefog = layers.Lambda(lambda x: x * 1, name = "connection_edgefog")(connection_edgefog)
     connection_edgefog = edge_failure_lambda(connection_edgefog)
     # skip hyperconnection, used 1x1 convolution to project shape of node output into (7,7,256)\
     # check it back to normal skip_hyperconnection
