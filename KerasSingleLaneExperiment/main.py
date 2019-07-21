@@ -12,11 +12,11 @@ import keras.backend as K
 import datetime
 import os
 
-from experiment.deepFogGuardPlus import define_deepFogGuardPlus
-from experiment.deepFogGuard import define_deepFogGuard
-from experiment.Vanilla import define_vanilla_model
-from experiment.random_guess import model_guess
-from experiment.loadData import load_data
+from KerasSingleLaneExperiment.deepFogGuardPlus import define_deepFogGuardPlus
+from KerasSingleLaneExperiment.deepFogGuard import define_deepFogGuard
+from KerasSingleLaneExperiment.Vanilla import define_vanilla_model
+from KerasSingleLaneExperiment.random_guess import model_guess
+from KerasSingleLaneExperiment.loadData import load_data
 
 def fail_node(model,node_array):
     """fails node by making the specified node/nodes output 0
@@ -183,7 +183,7 @@ if __name__ == "__main__":
     load_weights = False
     if load_weights:
         path = 'weights/7-11-2019/deepfoggguardTest.h5'
-        model = load_model(input_size = num_vars, output_size = num_classes, hidden_units = 250, weights_path = path, model_type = model_type, survive_rates=[.92,.96,.99])
+        model = load_model(num_vars = num_vars, num_classes = num_classes, hidden_units = 250, weights_path = path, model_type = model_type, survive_rates=[.92,.96,.99])
     else:
         K.set_learning_phase(1)
         model = train_model(training_data,training_labels,model_type=model_type,survive_rates=[.92,.96,.99])
