@@ -78,6 +78,7 @@ def random_guess(train_labels,test_data):
     # make a guess for each test example
     guess_preds = [guess(cumulative_frequency) for example in test_data]
     return guess_preds
+    
 # makes a random number and determines a class based on the cumulative frequency
 def guess(cumulative_frequency):
     # set the seed for more deterministc outputs 

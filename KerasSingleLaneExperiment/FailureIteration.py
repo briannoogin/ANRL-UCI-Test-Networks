@@ -7,17 +7,6 @@ import keras.models
 from experiment.main import fail_node,test
 from experiment.random_guess import model_guess, cnnmodel_guess
 
-def iterateFailures( numFailureCombinations, maxNumComponentFailure, debug):   
-   for i in range(numFailureCombinations):
-        numSurvived = numSurvivedComponents(i)
-        if ( numSurvived >= numComponents - maxNumComponentFailure ):
-            listOfZerosOnes = convertBinaryToList(i, numComponents)
-            accuracy = calcAccuracy(listOfZerosOnes)
-            weight = calcWeight(surv, listOfZerosOnes)
-            acuracyList.append(accuracy)
-            weightList.append(weight)
-            if debug:
-                print("numSurvived:",numSurvived," weight:", weight, " acc:",accuracy)
 
 # runs through all failure configurations for one model
 # prints out result to file
@@ -45,8 +34,6 @@ def iterateFailuresExperiment(surv,numComponents,model,accuracyList,weightList,f
             weightList.append(weight)
             print("numSurvived:",numSurvived," weight:", weight, " acc:",accuracy)
             output_list.append("numSurvived: " + str(numSurvived) + " weight: " + str(weight) + " acc: " + str(accuracy) + '\n')
-            # with open(file_name,'a+') as file:
-            #     file.write("numSurvived: " + str(numSurvived) + " weight: " + str(weight) + " acc: " + str(accuracy) + '\n')
     return failure_count
                 
 def calcAverageAccuracy(acuracyList, weightList):
@@ -89,10 +76,7 @@ def convertBinaryToList(number, numBits):
     for padding in range(max(0,numBits - len(lst))):
         lst.insert(0,'0')
     return lst
-    
-def calcAccuracy(listOfZerosOnes):
-    return test([float(listOfZerosOnes[i]) for i in range(len(listOfZerosOnes))])
-
+ 
 def calcModelAccuracy(file_name,model,output_list,training_labels,test_data,test_labels, is_cnn):
     # accuracy based on whether the model is fully connected or not 
     if is_cnn:
@@ -117,11 +101,6 @@ def run(file_name,model,surv,output_list,training_labels,test_data,test_labels):
     output_list.append('Average Accuracy: ' + str(avg_acc) + '\n')
     print('Number of Failures: ',str(failure_count))
     print("Average Accuracy:", avg_acc)
-    # with open(file_name,'a+') as file:
-    #         file.write('Number of Failures: ' + str(failure_count) + '\n')
-    #         
-    #         file.write('Average Accuracy: ' + str(avg_acc) + '\n')
-    #        
     return avg_acc
 # Driver program
 if __name__ == "__main__":  
@@ -130,8 +109,8 @@ if __name__ == "__main__":
     maxNumComponentFailure = 3
     debug = True
 
-    acuracyList = []
-    weightList = []
-    iterateFailures(2 ** numComponents, maxNumComponentFailure, debug)
-    weightList = normalizeWeights(weightList)
-    print("Average Accuracy:", calcAverageAccuracy(acuracyList, weightList))
+    # acuracyList = []
+    # weightList = []
+    # iterateFailures(2 ** numComponents, maxNumComponentFailure, debug)
+    # weightList = normalizeWeights(weightList)
+    # print("Average Accuracy:", calcAverageAccuracy(acuracyList, weightList))

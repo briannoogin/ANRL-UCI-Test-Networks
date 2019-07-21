@@ -16,10 +16,6 @@ from experiment.experiment import average
 import datetime
 import gc
 
-def view_model():
-    model = MobileNet(weights = None,classes=10,input_shape = (32,32,3),dropout = 0)
-    model.summary()
-
 def main():
     # get cifar10 data 
     (x_train, y_train), (x_test, y_test) = cifar10.load_data()
@@ -90,73 +86,7 @@ def main():
     if use_GCP:
         os.system('gsutil -m -q cp -r *.h5 gs://anrl-storage/models')
 
-def fail_cnn_node():
-        # get cifar10 data 
-        (x_train, y_train), (x_test, y_test) = cifar10.load_data()
-        x_test = x_test / 255
-        model_name = "models_GitHubANRL_cnn_fullskiphyperconnectiondropout_lowconfig_weights_alpha050_fixedstrides_dataaugmentation.h5"
-        model = skipconnections_ANRL_MobileNet(weights = None,classes=10,input_shape = (32,32,3),dropout = 0, alpha = .5)
-        model.load_weights(model_name)
-        model.compile(loss='sparse_categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
-        #"conv_pw_8"
-        #"conv_pw_3"
-        failed_layers = ["conv_pw_3"]
-        for layer_name in failed_layers:
-            layer = model.get_layer(name=layer_name)
-            layer_weights = layer.get_weights()
-            # make new weights for the connections
-            new_weights = np.zeros(layer_weights[0].shape)
-            #new_bias_weights[:] = np.nan # set weights to nan
-            layer.set_weights([new_weights])
-            print(layer_name, "was failed")
-        print(model.evaluate(x_test,y_test))
-
-# boost other available hyperconnection when node fails
-def fail_cnn_node_experiment2():
-        # get cifar10 data 
-        (x_train, y_train), (x_test, y_test) = cifar10.load_data()
-        x_test = x_test / 255
-        model_name = "models_GitHubANRL_cnn_fullskiphyperconnection_weights_alpha050_fixedstrides_dataaugmentation.h5"
-        model = skipconnections_ANRL_MobileNet(weights = None,classes=10,input_shape = (32,32,3),dropout = 0, alpha = .5)
-        model.load_weights(model_name)
-        model.compile(loss='sparse_categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
-        #"conv_pw_8"
-        #"conv_pw_3"
-        failed_layers = ["conv_pw_3"]
-        for layer_name in failed_layers:
-            layer = model.get_layer(name=layer_name)
-            layer_weights = layer.get_weights()
-            # make new weights for the connections
-            new_weights = np.zeros(layer_weights[0].shape)
-            #new_bias_weights[:] = np.nan # set weights to nan
-            layer.set_weights([new_weights])
-            print(layer_name, "was failed")
-        #boosted_hyperconnection = model.get_layer("skip_hyperconnection_iotfog")
-        boosted_hyperconnection = model.get_layer("skip_hyperconnection_edgecloud")
-        boosted_hyperconnection.set_weights(np.array(boosted_hyperconnection.get_weights()) * 5)
-        print(model.evaluate(x_test,y_test))
-
-def fail_hyperconnection():
-       # get cifar10 data 
-        (x_train, y_train), (x_test, y_test) = cifar10.load_data()
-        x_test = x_test / 255
-        model_name = "models_GitHubANRL_cnn_skiphyperconnection_weights_alpha050_fixedstrides_dataaugmentation.h5"
-        model = skipconnections_ANRL_MobileNet(weights = None,classes=10,input_shape = (32,32,3),dropout = 0, alpha = .5)
-        model.load_weights(model_name)
-        model.compile(loss='sparse_categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
-        layer_name = "skip_hyperconnection_edgecloud"
-        layer = model.get_layer(name=layer_name)
-        layer_weights = layer.get_weights()
-        # make new weights for the connections
-        new_weights = np.zeros(layer_weights[0].shape)
-        #new_bias_weights[:] = np.nan # set weights to nan
-        layer.set_weights([new_weights])
-        print(layer_name, "was failed")
-        print(model.evaluate(x_test,y_test))
 # cnn experiment 
 if __name__ == "__main__":
     main()
-    #fail_cnn_node()
-    #fail_cnn_node_experiment2()
-    #fail_hyperconnection()
-    #view_model()
+   
