@@ -1,10 +1,10 @@
 
-from experiment.ActiveGuard import define_active_guard_model_with_connections
-from experiment.FixedGuard import define_model_with_nofogbatchnorm_connections_extrainput,define_fixed_guard_baseline_model
-from experiment.Baseline import define_baseline_functional_model
-from experiment.loadData import load_data
+from KerasSingleLaneExperiment.deepFogGuardPlus import define_deepFogGuardPlus
+from KerasSingleLaneExperiment.deepFogGuardPlus import define_deepFogGuardPlus
+from KerasSingleLaneExperiment.Vanilla import define_vanilla_model
+from KerasSingleLaneExperiment.loadData import load_data
 from sklearn.model_selection import train_test_split
-from experiment.FailureIteration import run
+from KerasSingleLaneExperiment.FailureIteration import run
 import keras.backend as K
 import datetime
 import os
@@ -117,17 +117,17 @@ if __name__ == "__main__":
             K.set_learning_phase(1)
             # create models
 
-            # active guard
-            active_guard = define_active_guard_model_with_connections(num_vars,num_classes,hidden_units,0,survive_configuration)
-            active_guard_file = str(iteration) + " " + str(survive_configuration) + ' active_guard.h5'
+            # deepFogGuardPlus
+            deepFogGuardPlus = define_deepFogGuardPlus(num_vars,num_classes,hidden_units,survive_configuration)
+            deepFogGuardPlus_file = str(iteration) + " " + str(survive_configuration) + ' deepFogGuardPlus.h5'
             if load_model:
-                active_guard.load_weights(active_guard_file)
+                deepFogGuardPlus.load_weights(deepFogGuardPlus_file)
             else:
                 print("Training active guard")
-                active_guard.fit(data,labels,epochs=10, batch_size=batch_size,verbose=verbose,shuffle = True)
-                #active_guard.save_weights(active_guard_file)
+                deepFogGuardPlus.fit(data,labels,epochs=10, batch_size=batch_size,verbose=verbose,shuffle = True)
+                deepFogGuardPlus.save_weights(deepFogGuardPlus_file)
 
-            # fixed guard
+            # deepFogGuard
             fixed_guard = define_model_with_nofogbatchnorm_connections_extrainput(num_vars,num_classes,hidden_units,0,survive_configuration)
             fixed_guard_file = str(iteration) + " " +str(survive_configuration) + ' fixed_guard.h5'
             if load_model:
@@ -170,7 +170,7 @@ if __name__ == "__main__":
                 file.write('ACTIVE GUARD' + '\n')
                 output_list.append('ACTIVE GUARD' + '\n')
                 print("ACTIVE GUARD")
-                output["Active Guard"][str(survive_configuration)][iteration-1] = run(file_name,active_guard,survive_configuration,output_list,training_labels,test_data,test_labels)
+                output["Active Guard"][str(survive_configuration)][iteration-1] = run(file_name,deepFogGuardPlus,survive_configuration,output_list,training_labels,test_data,test_labels)
 
                 # fixed guard
                 file.write('FIXED GUARD' + '\n')

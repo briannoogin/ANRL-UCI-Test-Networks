@@ -1,10 +1,8 @@
 from keras.models import Sequential
 from keras.layers import Dense,Input,Lambda, Activation
-from experiment.LambdaLayers import add_first_node_layers,add_node_layers
+from KerasSingleLaneExperiment.LambdaLayers import add_node_layers
 from keras.models import Model
 
-
-# deepFogGuard model 
 def define_deepFogGuard(num_vars,num_classes,hidden_units,survive_rates, skip_hyperconnections = [1,1,1]):
     """Define a deepFogGuard model.
     ### Naming Convention
@@ -21,6 +19,8 @@ def define_deepFogGuard(num_vars,num_classes,hidden_units,survive_rates, skip_hy
 
 
     # weights calculated by survival rates, uncomment if want to weigh by survival rates
+    # connection_weight_IoTf2  = 1 / (1+survive_rates[0])
+    # connection_weight_ef2 = survive_rates[0] / (1 + survive_rates[0])
     # connection_weight_ef1 = survive_rates[0] / (survive_rates[0] + survive_rates[1])
     # connection_weight_f2f1 = survive_rates[1] / (survive_rates[0] + survive_rates[1])
     # connection_weight_f2c = survive_rates[1] / (survive_rates[1] + survive_rates[2])

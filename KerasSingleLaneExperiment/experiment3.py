@@ -9,10 +9,10 @@ from keras.callbacks import ModelCheckpoint
 import keras.backend as K
 import math
 import os 
-from experiment.cnn import baseline_ANRL_MobileNet, skipconnections_ANRL_MobileNet, skipconnections_dropout_ANRL_MobileNet
-from experiment.FailureIteration import run
+from KerasSingleLaneExperiment.cnn import baseline_ANRL_MobileNet, skipconnections_ANRL_MobileNet, skipconnections_dropout_ANRL_MobileNet
+from KerasSingleLaneExperiment.FailureIteration import run
 import numpy as np
-from experiment.experiment import average
+from KerasSingleLaneExperiment.experiment import average
 import datetime
 import gc
 
@@ -51,6 +51,7 @@ def main():
         os.mkdir('results/')
         os.mkdir('results/' + date)
     file_name = 'results/' + date + '/experiment3_baselineexperiment_results.txt'
+    output_list = []
     for iteration in range(1,num_iterations+1):
         print("iteration:",iteration)
         model_name = "GitHubANRL_cnn_baseline_weights_alpha050_fixedstrides_dataaugmentation" + str(iteration) + ".h5"
@@ -64,11 +65,10 @@ def main():
         batch_size = 128
         steps_per_epoch = math.ceil(num_samples / batch_size)
         model.fit_generator(datagen.flow(x_train,y_train,batch_size = batch_size),epochs = 75,validation_data = (x_test,y_test), steps_per_epoch = steps_per_epoch, verbose = 2,callbacks = [checkpoint])
-        output_list = []
         for survive_config in survive_configs:
             output_list.append(str(survive_config) + '\n')
             print(survive_config)
-            output["Active Guard"][str(survive_config)][iteration-1] = run(" ",model, survive_config,output_list, y_train, x_test, y_test)
+            output["Active Guard"][str(survive_config)][iteration-1] = run(model, survive_config,output_list, y_train, x_test, y_test)
         # clear session so that model will recycled back into memory
         K.clear_session()
         gc.collect()
@@ -85,8 +85,169 @@ def main():
     use_GCP = True
     if use_GCP:
         os.system('gsutil -m -q cp -r *.h5 gs://anrl-storage/models')
-
+        os.system('gsutil -m -q cp -r {} gs://anrl-storage/results/'.format(file_name))
+def dropout_ablation():
+    # get cifar10 data 
+    (x_train, y_train), (x_test, y_test) = cifar10.load_data()
+    # normalize input
+    x_train = x_train / 255
+    x_test = x_test / 255
+    datagen = ImageDataGenerator(
+    rotation_range=30,
+    width_shift_range=0.2,
+    height_shift_range=0.2,
+    horizontal_flip=True,
+    )
+    survive_configs = [
+        [.96,.98],
+        [.90,.95],
+        [.80,.85],
+        [1,1]
+    ]
+    num_iterations = 10
+    output = {
+        "DeepFogGuard Plus Baseline":
+        {
+            "[0.9, 0.9, 0.9]":
+            {
+                "[0.96, 0.98]": [0] * num_iterations,
+                "[0.9, 0.95]":[0] * num_iterations,
+                "[0.8, 0.85]":[0] * num_iterations,
+                "[1, 1]":[0] * num_iterations,
+            },
+            "[0.7, 0.7, 0.7]":
+            {
+               "[0.96, 0.98]": [0] * num_iterations,
+                "[0.9, 0.95]":[0] * num_iterations,
+                "[0.8, 0.85]":[0] * num_iterations,
+                "[1, 1]":[0] * num_iterations,
+            },
+            "[0.5, 0.5, 0.5]":
+            {
+                "[0.96, 0.98]": [0] * num_iterations,
+                "[0.9, 0.95]":[0] * num_iterations,
+                "[0.8, 0.85]":[0] * num_iterations,
+                "[1, 1]":[0] * num_iterations,
+            },
+        }
+    }
+    dropout_configs = [
+        # [.9,.9,.9],
+        [.7,.7,.7],
+        [.5,.5,.5],
+    ]
+    now = datetime.datetime.now()
+    date = str(now.month) + '-' + str(now.day) + '-' + str(now.year)
+    # make folder for outputs 
+    if not os.path.exists('results/' + date):
+        os.mkdir('results/')
+        os.mkdir('results/' + date)
+    file_name = 'results/' + date + '/experiment3_dropoutAblation_test_results.txt'
+    output_list = []
+    for iteration in range(1,num_iterations+1):
+        print("iteration:",iteration)
+        for dropout in dropout_configs:
+            model_name = "GitHubANRL_deepFogGuardPlus_dropoutAblation" + str(dropout) + "_weights_alpha050_fixedstrides_dataaugmentation" + str(iteration) + ".h5"
+            model = skipconnections_dropout_ANRL_MobileNet(weights = None,classes=10,input_shape = (32,32,3),dropout = 0, alpha = .5,survive_rates=dropout)
+            model.compile(loss='sparse_categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
+            num_samples = len(x_train)
+            batch_size = 128
+            steps_per_epoch = math.ceil(num_samples / batch_size)
+            model.fit_generator(datagen.flow(x_train,y_train,batch_size = batch_size),epochs = 75,validation_data = (x_test,y_test), steps_per_epoch = steps_per_epoch, verbose = 2)
+            model.save_weights(model_name)
+            for survive_config in survive_configs:
+                output_list.append(str(survive_config) + '\n')
+                print(survive_config)
+                output["DeepFogGuard Plus Baseline"][str(dropout)][str(survive_config)][iteration-1] = run(model, survive_config,output_list, y_train, x_test, y_test)
+            # clear session so that model will recycled back into memory
+            K.clear_session()
+            gc.collect()
+            del model
+    with open(file_name,'a+') as file:
+        for survive_config in survive_configs:
+            for dropout in dropout_configs:
+                output_list.append(str(survive_config) + '\n')
+                active_guard_acc = average(output["DeepFogGuard Plus Baseline"][str(dropout)][str(survive_config)])
+                output_list.append(str(survive_config) + str(dropout) + " Dropout Accuracy: " + str(active_guard_acc) + '\n')
+                print(str(survive_config), str(dropout), " Dropout Accuracy:",active_guard_acc)
+        file.writelines(output_list)
+        file.flush()
+        os.fsync(file)
+    use_GCP = True
+    if use_GCP:
+        os.system('gsutil -m -q cp -r *.h5 gs://anrl-storage/models')
+        os.system('gsutil -m -q cp -r {} gs://anrl-storage/results/'.format(file_name))
+def hyperconnection_weight_ablation():
+     # get cifar10 data 
+    (x_train, y_train), (x_test, y_test) = cifar10.load_data()
+    # normalize input
+    x_train = x_train / 255
+    x_test = x_test / 255
+    datagen = ImageDataGenerator(
+    rotation_range=30,
+    width_shift_range=0.2,
+    height_shift_range=0.2,
+    horizontal_flip=True,
+    )
+    survive_configs = [
+        [.96,.98],
+        [.90,.95],
+        [.80,.85],
+        [1,1]
+    ]
+    num_iterations = 10
+    output = {
+        "DeepFogGuard Baseline":
+        {
+            "[0.96, 0.98]": [0] * num_iterations,
+            "[0.9, 0.95]":[0] * num_iterations,
+            "[0.8, 0.85]":[0] * num_iterations,
+            "[1, 1]":[0] * num_iterations,
+        },
+    }
+    now = datetime.datetime.now()
+    date = str(now.month) + '-' + str(now.day) + '-' + str(now.year)
+    # make folder for outputs 
+    if not os.path.exists('results/' + date):
+        os.mkdir('results/')
+        os.mkdir('results/' + date)
+    file_name = 'results/' + date + '/experiment3_hyperconnection_weight_ablation_results.txt'
+    output_list = []
+    for iteration in range(1,num_iterations+1):
+        print("iteration:",iteration)
+        num_samples = len(x_train)
+        batch_size = 128
+        steps_per_epoch = math.ceil(num_samples / batch_size)
+        for survive_config in survive_configs:
+            model_name = "GitHubANRL_deepFogGuardPlus_hyperconnectionweightablation_" + str(survive_config) + "_weights_alpha050_fixedstrides_dataaugmentation" + str(iteration) + ".h5"
+            model = skipconnections_ANRL_MobileNet(weights = None,classes=10,input_shape = (32,32,3),dropout = 0, alpha = .5,hyperconnection_weights=survive_config)
+            model.compile(loss='sparse_categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
+            model.fit_generator(datagen.flow(x_train,y_train,batch_size = batch_size),epochs = 75,validation_data = (x_test,y_test), steps_per_epoch = steps_per_epoch, verbose = 2)
+            model.save_weights(model_name)
+            output_list.append(str(survive_config) + '\n')
+            print(survive_config)
+            output["DeepFogGuard Baseline"][str(survive_config)][iteration-1] = run(model, survive_config,output_list, y_train, x_test, y_test)
+            # clear session so that model will recycled back into memory
+            K.clear_session()
+            gc.collect()
+            del model
+    with open(file_name,'a+') as file:
+        for survive_config in survive_configs:
+            output_list.append(str(survive_config) + '\n')
+            active_guard_acc = average(output["DeepFogGuard Baseline"][str(survive_config)])
+            output_list.append(str(survive_config) + str(active_guard_acc) + '\n')
+            print(str(survive_config),active_guard_acc)
+        file.writelines(output_list)
+        file.flush()
+        os.fsync(file)
+    use_GCP = True
+    if use_GCP:
+        os.system('gsutil -m -q cp -r *.h5 gs://anrl-storage/models')
+        os.system('gsutil -m -q cp -r {} gs://anrl-storage/results/'.format(file_name))
+def hyperconnection_sensitivty_ablation():
+    pass
 # cnn experiment 
 if __name__ == "__main__":
-    main()
-   
+    #main()
+    #dropout_ablation()
+    hyperconnection_weight_ablation()

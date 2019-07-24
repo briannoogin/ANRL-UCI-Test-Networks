@@ -1,9 +1,9 @@
-from experiment.ActiveGuard import define_active_guard_model_with_connections_hyperconnectionweight1
-from experiment.FixedGuard import define_fixed_guard_model_experiment2
-from experiment.loadData import load_data
+from KerasSingleLaneExperiment.deepFogGuardPlus import define_deepFogGuardPlus
+from KerasSingleLaneExperiment.deepFogGuard import define_deepFogGuard
+from KerasSingleLaneExperiment.loadData import load_data
 from sklearn.model_selection import train_test_split
-from experiment.FailureIteration import run
-from experiment.experiment2 import average
+from KerasSingleLaneExperiment.FailureIteration import run
+from KerasSingleLaneExperiment.experiment2 import average
 import keras.backend as K
 import datetime
 import os

@@ -1,12 +1,11 @@
 from keras.models import Sequential
 from keras.layers import Dense,Input,Lambda, Activation
 import keras.backend as K
-from experiment.LambdaLayers import add_first_node_layers,add_node_layers
+from KerasSingleLaneExperiment.LambdaLayers import add_node_layers
 from keras.models import Model
 from keras.backend import constant
 import random 
 
-# deepFogGuardPlus
 def define_deepFogGuardPlus(num_vars,num_classes,hidden_units,survive_rates,skip_hyperconnections = [1,1,1]):
     """Define a deepFogGuardPlus model.
     ### Naming Convention

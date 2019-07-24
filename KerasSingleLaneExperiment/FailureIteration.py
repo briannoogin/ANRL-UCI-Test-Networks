@@ -4,13 +4,24 @@ from sklearn.metrics import recall_score
 from sklearn.metrics import precision_score
 import keras.models
 
-from experiment.main import fail_node,test
-from experiment.random_guess import model_guess, cnnmodel_guess
+from KerasSingleLaneExperiment.main import fail_node,test
+from KerasSingleLaneExperiment.random_guess import model_guess, cnnmodel_guess
 
 
-# runs through all failure configurations for one model
-# prints out result to file
-def iterateFailuresExperiment(surv,numComponents,model,accuracyList,weightList,file_name,output_list,training_labels,test_data,test_labels):
+def iterateFailuresExperiment(surv,numComponents,model,accuracyList,weightList,output_list,training_labels,test_data,test_labels):
+    """runs through all failure configurations for one model
+    ### Arguments
+        surv (list): contains the survival rate of all nodes, ordered from edge to fog node
+        numComponents (int): number of nodes that can fail
+        model (Model): Keras model
+        accuracyList (list): list of all the survival configuration accuracies 
+        weightList (list): list of all the survival configuration probabilites 
+        train_labels (numpy array): 1D array that corresponds to each row in the training data with a class label, used for calculating train class distributio
+        test_data (numpy array): 2D array that contains the test data, assumes that each column is a variable and that each row is a test example
+        test_labels (numpy array): 1D array that corresponds to each row in the test data with a class label
+    ### Returns
+        return how many survival configurations had total network failure
+    """  
     failure_count = 0
     maxNumComponentFailure = 2 ** numComponents
     for i in range(maxNumComponentFailure):
@@ -23,7 +34,7 @@ def iterateFailuresExperiment(surv,numComponents,model,accuracyList,weightList,f
             is_cnn = fail_node(model,failures)
             print(failures)
             output_list.append(str(failures))
-            accuracy,failure = calcModelAccuracy(file_name,model,output_list,training_labels,test_data,test_labels,is_cnn)
+            accuracy,failure = calcModelAccuracy(model,output_list,training_labels,test_data,test_labels,is_cnn)
             # add number of failures for a model
             failure_count += failure
             # change the changed weights to the original weights
@@ -77,12 +88,12 @@ def convertBinaryToList(number, numBits):
         lst.insert(0,'0')
     return lst
  
-def calcModelAccuracy(file_name,model,output_list,training_labels,test_data,test_labels, is_cnn):
+def calcModelAccuracy(model,output_list,training_labels,test_data,test_labels, is_cnn):
     # accuracy based on whether the model is fully connected or not 
     if is_cnn:
-         acc,failure = cnnmodel_guess(model,training_labels,test_data,test_labels,file_name)
+         acc,failure = cnnmodel_guess(model,training_labels,test_data,test_labels)
     else:
-        acc,failure = model_guess(model,training_labels,test_data,test_labels,file_name)
+        acc,failure = model_guess(model,training_labels,test_data,test_labels)
     return acc,failure
 
 def normalizeWeights(weights):
@@ -90,11 +101,11 @@ def normalizeWeights(weights):
     weightNormalized = [(x/sumWeights) for x in weights]
     return weightNormalized
  
-def run(file_name,model,surv,output_list,training_labels,test_data,test_labels):
+def run(model,surv,output_list,training_labels,test_data,test_labels):
     numComponents = len(surv)
     accuracyList = []
     weightList = []
-    failure_count = iterateFailuresExperiment(surv,numComponents, model,accuracyList,weightList,file_name,output_list,training_labels,test_data,test_labels)
+    failure_count = iterateFailuresExperiment(surv,numComponents, model,accuracyList,weightList,output_list,training_labels,test_data,test_labels)
     weightList = normalizeWeights(weightList)
     avg_acc = calcAverageAccuracy(accuracyList, weightList)
     output_list.append('Number of Failures: ' + str(failure_count) + '\n')
