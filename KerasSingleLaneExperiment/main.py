@@ -154,7 +154,7 @@ def test(survive_array):
     ### Arguments
         survive_array (list): Keras model to have nodes failed
     ### Returns
-        return a tuple of accuracy as a float and whether there was total network failure as a boolean
+        return a tuple of accuracy as a float and whether there was total network failure as an integer
     """
     data,labels= load_data('mHealth_complete.log')
     training_data, test_data, training_labels, test_labels = train_test_split(data,labels,random_state = 42, test_size = .2, shuffle = True,stratify = labels)
@@ -178,7 +178,7 @@ if __name__ == "__main__":
     num_classes = 13
 
     # define model type
-    model_type = 5
+    model_type = 1
 
     load_weights = False
     if load_weights:
