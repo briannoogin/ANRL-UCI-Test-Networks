@@ -86,6 +86,7 @@ def main():
     if use_GCP:
         os.system('gsutil -m -q cp -r *.h5 gs://anrl-storage/models')
         os.system('gsutil -m -q cp -r {} gs://anrl-storage/results/'.format(file_name))
+
 def dropout_ablation():
     # get cifar10 data 
     (x_train, y_train), (x_test, y_test) = cifar10.load_data()
@@ -104,7 +105,7 @@ def dropout_ablation():
         [.80,.85],
         [1,1]
     ]
-    num_iterations = 10
+    num_iterations = 1
     output = {
         "DeepFogGuard Plus Baseline":
         {
@@ -129,12 +130,20 @@ def dropout_ablation():
                 "[0.8, 0.85]":[0] * num_iterations,
                 "[1, 1]":[0] * num_iterations,
             },
+            # "[0.95, 0.95, 0.95]":
+            # {
+            #     "[0.96, 0.98]": [0] * num_iterations,
+            #     "[0.9, 0.95]":[0] * num_iterations,
+            #     "[0.8, 0.85]":[0] * num_iterations,
+            #     "[1, 1]":[0] * num_iterations,
+            # },
         }
     }
     dropout_configs = [
-        # [.9,.9,.9],
+        [.9,.9,.9],
         [.7,.7,.7],
         [.5,.5,.5],
+        [.95,.95,.95],
     ]
     now = datetime.datetime.now()
     date = str(now.month) + '-' + str(now.day) + '-' + str(now.year)
@@ -142,7 +151,7 @@ def dropout_ablation():
     if not os.path.exists('results/' + date):
         os.mkdir('results/')
         os.mkdir('results/' + date)
-    file_name = 'results/' + date + '/experiment3_dropoutAblation_test_results.txt'
+    file_name = 'results/' + date + '/experiment3_dropoutAblation_95test_results.txt'
     output_list = []
     for iteration in range(1,num_iterations+1):
         print("iteration:",iteration)
@@ -177,6 +186,7 @@ def dropout_ablation():
     if use_GCP:
         os.system('gsutil -m -q cp -r *.h5 gs://anrl-storage/models')
         os.system('gsutil -m -q cp -r {} gs://anrl-storage/results/'.format(file_name))
+        
 def hyperconnection_weight_ablation():
      # get cifar10 data 
     (x_train, y_train), (x_test, y_test) = cifar10.load_data()
@@ -261,9 +271,8 @@ def hyperconnection_sensitivity_ablation():
         [.96,.98],
         [.90,.95],
         [.80,.85],
-        [1,1]
     ]
-    num_iterations = 10
+    num_iterations = 20
     hyperconnections = [
         [0,0],
         [1,0],
@@ -294,13 +303,6 @@ def hyperconnection_sensitivity_ablation():
                 "[0, 1]":[0] * num_iterations,
                 "[1, 1]":[0] * num_iterations,
             },
-            "[1, 1]":
-            {
-                "[0, 0]":[0] * num_iterations,
-                "[1, 0]":[0] * num_iterations,
-                "[0, 1]":[0] * num_iterations,
-                "[1, 1]":[0] * num_iterations,
-            }
         },
     }
     now = datetime.datetime.now()
@@ -309,7 +311,7 @@ def hyperconnection_sensitivity_ablation():
     if not os.path.exists('results/' + date):
         os.mkdir('results/')
         os.mkdir('results/' + date)
-    file_name = 'results/' + date + '/experiment3_hyperconnection_sensitivityablation_results.txt'
+    file_name = 'results/' + date + '/experiment3_hyperconnection_sensitivityablation_results3.txt'
     output_list = []
     for iteration in range(1,num_iterations+1):
         print("iteration:",iteration)
@@ -317,7 +319,7 @@ def hyperconnection_sensitivity_ablation():
         batch_size = 128
         steps_per_epoch = math.ceil(num_samples / batch_size)
         for hyperconnection in hyperconnections:
-            model_name = "GitHubANRL_deepFogGuardPlus_hyperconnectionsensitvityablation" + str(hyperconnection) + "_weights_alpha050_fixedstrides_dataaugmentation" + str(iteration) + ".h5"
+            model_name = "GitHubANRL_deepFogGuardPlus_hyperconnectionsensitvityablation3" + str(hyperconnection) + "_weights_alpha050_fixedstrides_dataaugmentation" + str(iteration) + ".h5"
             model = skipconnections_ANRL_MobileNet(weights = None,classes=10,input_shape = (32,32,3),dropout = 0, alpha = .5,hyperconnections = hyperconnection)
             model.compile(loss='sparse_categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
             num_samples = len(x_train)
@@ -354,6 +356,6 @@ def hyperconnection_sensitivity_ablation():
 # cnn experiment 
 if __name__ == "__main__":
     #main()
-    #dropout_ablation()
+    # dropout_ablation()
     #hyperconnection_weight_ablation()
     hyperconnection_sensitivity_ablation()

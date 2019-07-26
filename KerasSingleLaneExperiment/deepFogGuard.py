@@ -3,7 +3,7 @@ from keras.layers import Dense,Input,Lambda, Activation
 from KerasSingleLaneExperiment.LambdaLayers import add_node_layers
 from keras.models import Model
 
-def define_deepFogGuard(num_vars,num_classes,hidden_units,survive_rates, skip_hyperconnections = [1,1,1],hyperconnection_weights=[1,1]):
+def define_deepFogGuard(num_vars,num_classes,hidden_units,survive_rates, skip_hyperconnections = [1,1,1],isUnWeighted = True):
     """Define a deepFogGuard model.
     ### Naming Convention
         ex: f1f2 = connection between fog node 1 and fog node 2
@@ -12,12 +12,14 @@ def define_deepFogGuard(num_vars,num_classes,hidden_units,survive_rates, skip_hy
         num_classes (int): specifies number of classes to be outputted by the model
         hidden_units (int): specifies number of hidden units per layer in network
         survive_rates (list): specifies the survival rate of each node in the network
-        hyperconnections (list): specifies the alive skip hyperconnections in the network, default value is [1,1,1]
+        skip_hyperconnections (list): specifies the alive skip hyperconnections in the network, default value is [1,1,1]
+        hyperconnection_weights (list): specifies the probability, default value is [1,1,1]
+        isWeighted (boolean): determines if the hyperconnections should be based on surivive_rates
     ### Returns
         Keras Model object
     """
 
-    if hyperconnection_weights == [1,1]:
+    if isUnWeighted:
         # all hyperconnection weights are weighted 1
         connection_weight_IoTf2  = 1
         connection_weight_ef2 = 1

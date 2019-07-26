@@ -15,7 +15,7 @@ def define_deepFogGuardPlus(num_vars,num_classes,hidden_units,survive_rates,skip
         num_classes (int): specifies number of classes to be outputted by the model
         hidden_units (int): specifies number of hidden units per layer in network
         survive_rates (list): specifies the survival rate of each node in the network
-        hyperconnections (list): specifies the alive skip hyperconnections in the network, default value is [1,1,1]
+        skip_hyperconnections (list): specifies the alive skip hyperconnections in the network, default value is [1,1,1]
     ### Returns
         Keras Model object
     """

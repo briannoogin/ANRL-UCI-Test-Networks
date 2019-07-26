@@ -57,8 +57,13 @@ def fail_node(model,node_array):
                 print(layer_name, "was failed")
     return is_cnn
 
-# function to return average of a list 
 def average(list):
+    """function to return average of a list 
+    ### Arguments
+        list (list): list of numbers
+    ### Returns
+        return sum of list
+    """
     if len(list) == 0:
         return 0
     else:

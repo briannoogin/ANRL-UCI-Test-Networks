@@ -3,7 +3,7 @@ from KerasSingleLaneExperiment.deepFogGuard import define_deepFogGuard
 from KerasSingleLaneExperiment.loadData import load_data
 from sklearn.model_selection import train_test_split
 from KerasSingleLaneExperiment.FailureIteration import run
-from KerasSingleLaneExperiment.experiment2 import average
+from KerasSingleLaneExperiment.main import average
 import keras.backend as K
 import datetime
 import os
