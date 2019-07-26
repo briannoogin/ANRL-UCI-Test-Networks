@@ -314,6 +314,7 @@ def skipconnections_ANRL_MobileNet(input_shape=None,
               input_tensor=None,
               pooling=None,
               classes=1000,
+              hyperconnections = [1,1],
               hyperconnection_weights=[1,1],
               **kwargs):
     """Instantiates the MobileNet architecture.
@@ -450,6 +451,12 @@ def skipconnections_ANRL_MobileNet(input_shape=None,
         connection_weight_ec = hyperconnection_weights[0] / (hyperconnection_weights[1] + hyperconnection_weights[0])
         connection_weight_fc = hyperconnection_weights[1] / (hyperconnection_weights[1] + hyperconnection_weights[0])
 
+     # take away the skip hyperconnection if the value in hyperconnections array is 0
+    if hyperconnections[0] == 0:
+        connection_weight_IoTf = 0
+    if hyperconnections[1] == 0:
+        connection_weight_ec = 0
+        
     # define lambdas for multiplying node weights by connection weight
     multiply_weight_layer_IoTf = layers.Lambda((lambda x: x * connection_weight_IoTf), name = "connection_weight_IoTf")
     multiply_weight_layer_ef = layers.Lambda((lambda x: x * connection_weight_ef), name = "connection_weight_ef")

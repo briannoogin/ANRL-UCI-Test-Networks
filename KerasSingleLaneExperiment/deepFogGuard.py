@@ -3,7 +3,7 @@ from keras.layers import Dense,Input,Lambda, Activation
 from KerasSingleLaneExperiment.LambdaLayers import add_node_layers
 from keras.models import Model
 
-def define_deepFogGuard(num_vars,num_classes,hidden_units,survive_rates, skip_hyperconnections = [1,1,1]):
+def define_deepFogGuard(num_vars,num_classes,hidden_units,survive_rates, skip_hyperconnections = [1,1,1],hyperconnection_weights=[1,1]):
     """Define a deepFogGuard model.
     ### Naming Convention
         ex: f1f2 = connection between fog node 1 and fog node 2
@@ -17,22 +17,23 @@ def define_deepFogGuard(num_vars,num_classes,hidden_units,survive_rates, skip_hy
         Keras Model object
     """
 
-
-    # weights calculated by survival rates, uncomment if want to weigh by survival rates
-    # connection_weight_IoTf2  = 1 / (1+survive_rates[0])
-    # connection_weight_ef2 = survive_rates[0] / (1 + survive_rates[0])
-    # connection_weight_ef1 = survive_rates[0] / (survive_rates[0] + survive_rates[1])
-    # connection_weight_f2f1 = survive_rates[1] / (survive_rates[0] + survive_rates[1])
-    # connection_weight_f2c = survive_rates[1] / (survive_rates[1] + survive_rates[2])
-    # connection_weight_f1c = survive_rates[2] / (survive_rates[1] + survive_rates[2])
-
-    # all hyperconnection weights are weighted 1
-    connection_weight_IoTf2  = 1
-    connection_weight_ef2 = 1
-    connection_weight_ef1 = 1
-    connection_weight_f2f1 = 1
-    connection_weight_f2c = 1
-    connection_weight_f1c = 1
+    if hyperconnection_weights == [1,1]:
+        # all hyperconnection weights are weighted 1
+        connection_weight_IoTf2  = 1
+        connection_weight_ef2 = 1
+        connection_weight_ef1 = 1
+        connection_weight_f2f1 = 1
+        connection_weight_f2c = 1
+        connection_weight_f1c = 1
+    else:
+        # weights calculated by survival rates
+        connection_weight_IoTf2  = 1 / (1+survive_rates[0])
+        connection_weight_ef2 = survive_rates[0] / (1 + survive_rates[0])
+        connection_weight_ef1 = survive_rates[0] / (survive_rates[0] + survive_rates[1])
+        connection_weight_f2f1 = survive_rates[1] / (survive_rates[0] + survive_rates[1])
+        connection_weight_f2c = survive_rates[1] / (survive_rates[1] + survive_rates[2])
+        connection_weight_f1c = survive_rates[2] / (survive_rates[1] + survive_rates[2])
+   
 
      # take away the skip hyperconnection if the value in hyperconnections array is 0
     if skip_hyperconnections[0] == 0:

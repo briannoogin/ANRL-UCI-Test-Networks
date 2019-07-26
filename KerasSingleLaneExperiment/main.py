@@ -57,6 +57,13 @@ def fail_node(model,node_array):
                 print(layer_name, "was failed")
     return is_cnn
 
+# function to return average of a list 
+def average(list):
+    if len(list) == 0:
+        return 0
+    else:
+        return sum(list) / len(list)
+        
 def train_model(training_data,training_labels,model_type, survive_rates):
     """trains Keras model from training data and training labels
     ### Arguments

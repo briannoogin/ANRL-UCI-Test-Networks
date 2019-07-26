@@ -7,9 +7,6 @@ import keras.backend as K
 import datetime
 import os
 import gc 
-# function to return average a list 
-def average(list):
-    return sum(list) / len(list)
 
 # runs all hyperconnection configurations for both fixed and active guard survival configurations
 # sensitivity analysis 

@@ -1,20 +1,18 @@
 
 from KerasSingleLaneExperiment.deepFogGuardPlus import define_deepFogGuardPlus
-from KerasSingleLaneExperiment.deepFogGuardPlus import define_deepFogGuardPlus
+from KerasSingleLaneExperiment.deepFogGuard import define_deepFogGuard
 from KerasSingleLaneExperiment.Vanilla import define_vanilla_model
 from KerasSingleLaneExperiment.loadData import load_data
 from sklearn.model_selection import train_test_split
 from KerasSingleLaneExperiment.FailureIteration import run
+from KerasSingleLaneExperiment.main import average
 import keras.backend as K
 import datetime
+import gc
 import os
 
-# function to return average of a list 
-def average(list):
-    if len(list) == 0:
-        return 0
-    else:
-        return sum(list) / len(list)
+# TODO: to add dropout abalation to actual model
+
 # runs all 3 failure configurations for all 3 models
 if __name__ == "__main__":
     use_GCP = True
@@ -51,35 +49,35 @@ if __name__ == "__main__":
     output_list = []
     # dictionary to store all the results
     output = {
-        "Active Guard":
+        "deepFogGuard Plus":
         {
             "[0.78, 0.8, 0.85]":[0] * num_iterations,
             "[0.87, 0.91, 0.95]":[0] * num_iterations,
             "[0.92, 0.96, 0.99]":[0] * num_iterations,
             "[1, 1, 1]":[0] * num_iterations,
         }, 
-        "Fixed Guard":
+        "deepFogGuard":
         {
             "[0.78, 0.8, 0.85]":[0] * num_iterations,
             "[0.87, 0.91, 0.95]":[0] * num_iterations,
             "[0.92, 0.96, 0.99]":[0] * num_iterations,
             "[1, 1, 1]":[0] * num_iterations,
         },
-        "Baseline": 
+        "Vanilla": 
         {
             "[0.78, 0.8, 0.85]":[0] * num_iterations,
             "[0.87, 0.91, 0.95]":[0] * num_iterations,
             "[0.92, 0.96, 0.99]":[0] * num_iterations,
             "[1, 1, 1]":[0] * num_iterations,
         },
-        "Baseline Fixed Guard": 
+        "deepFogGuard Weight Ablation": 
         {
             "[0.78, 0.8, 0.85]":[0] * num_iterations,
             "[0.87, 0.91, 0.95]":[0] * num_iterations,
             "[0.92, 0.96, 0.99]":[0] * num_iterations,
             "[1, 1, 1]":[0] * num_iterations,
         },
-        "Baseline Active Guard": 
+        "deepFogGuard Plus Ablation": 
         {
             "[0.9, 0.9, 0.9]":
             {
@@ -109,10 +107,8 @@ if __name__ == "__main__":
         os.mkdir('results/')
         os.mkdir('results/' + date)
     for iteration in range(1,num_iterations+1):   
-        with open(file_name,'a+') as file:
-            output_list.append('ITERATION ' + str(iteration) +  '\n')
-            file.write('ITERATION ' + str(iteration) +  '\n')
-            print("ITERATION ", iteration)
+        output_list.append('ITERATION ' + str(iteration) +  '\n')
+        print("ITERATION ", iteration)
         for survive_configuration in survive_configurations:
             K.set_learning_phase(1)
             # create models
@@ -123,152 +119,124 @@ if __name__ == "__main__":
             if load_model:
                 deepFogGuardPlus.load_weights(deepFogGuardPlus_file)
             else:
-                print("Training active guard")
+                print("Training deepFogGuardPlus")
                 deepFogGuardPlus.fit(data,labels,epochs=10, batch_size=batch_size,verbose=verbose,shuffle = True)
                 deepFogGuardPlus.save_weights(deepFogGuardPlus_file)
 
             # deepFogGuard
-            fixed_guard = define_model_with_nofogbatchnorm_connections_extrainput(num_vars,num_classes,hidden_units,0,survive_configuration)
-            fixed_guard_file = str(iteration) + " " +str(survive_configuration) + ' fixed_guard.h5'
+            deepFogGuard = define_deepFogGuard(num_vars,num_classes,hidden_units,survive_configuration)
+            deepFogGuard_file = str(iteration) + " " +str(survive_configuration) + ' deepFogGuard.h5'
             if load_model:
-                fixed_guard.load_weights(fixed_guard_file)
+                deepFogGuard.load_weights(deepFogGuard_file)
             else:
-                print("Training fixed guard")
-                fixed_guard.fit(data,labels,epochs=10, batch_size=batch_size,verbose=verbose,shuffle = True)
-                #fixed_guard.save_weights(fixed_guard_file)
+                print("Training deepFogGuard")
+                deepFogGuard.fit(data,labels,epochs=10, batch_size=batch_size,verbose=verbose,shuffle = True)
+                deepFogGuard.save_weights(deepFogGuard_file)
 
-            # fixed guard baseline
-            baseline_fixed_guard = define_fixed_guard_baseline_model(num_vars,num_classes,hidden_units,0,survive_configuration)
-            baseline_fixed_guard_file = str(iteration) + " " + str(survive_configuration) + ' baseline_fixed_guard.h5'
+            # deepFogGuard weight ablation
+            deepFogGuard_weight_ablation = deepFogGuard(num_vars,num_classes,hidden_units,survive_configuration,hyperconnection_weights = survive_configuration)
+            deepFogGuard_weight_ablation_file = str(iteration) + " " + str(survive_configuration) + ' deepFogGuard_weight_ablation.h5'
             if load_model:
-                baseline_fixed_guard.load_weights(baseline_fixed_guard_file)
+                deepFogGuard_weight_ablation.load_weights(deepFogGuard_weight_ablation_file)
             else:
-                print("Training fixed guard baseline")
-                baseline_fixed_guard.fit(data,labels,epochs=10, batch_size=batch_size,verbose=verbose,shuffle = True)
-                #baseline_fixed_guard.save_weights(baseline_fixed_guard_file)
+                print("Training deepFogGuard Weight Ablation")
+                deepFogGuard_weight_ablation.fit(data,labels,epochs=10, batch_size=batch_size,verbose=verbose,shuffle = True)
+                deepFogGuard_weight_ablation.save_weights(deepFogGuard_weight_ablation_file)
 
-            # baseline model
-            baseline = define_baseline_functional_model(num_vars,num_classes,hidden_units,0)
-            baseline_file = str(iteration) + " " + str(survive_configuration) + ' baseline.h5'
+            # vanilla model
+            vanilla = define_vanilla_model(num_vars,num_classes,hidden_units)
+            vanilla_file = str(iteration) + " " + str(survive_configuration) + ' vanilla.h5'
             if load_model:
-                baseline.load_weights(baseline_file)
+                vanilla.load_weights(vanilla_file)
             else:
-                print("Training baseline")
-                baseline.fit(data,labels,epochs=10, batch_size=batch_size,verbose=verbose,shuffle = True)
-                #baseline.save_weights(baseline_file)
+                print("Training vanilla")
+                vanilla.fit(data,labels,epochs=10, batch_size=batch_size,verbose=verbose,shuffle = True)
+                vanilla.save_weights(vanilla_file)
 
             # test models
             K.set_learning_phase(0)
 
-            # write results to a file 
-            with open(file_name,'a+') as file:
-                # survival configurations
-                print(survive_configuration)
-                file.write(str(survive_configuration) + '\n')
+            # survival configurations
+            print(survive_configuration)
+            output_list.append(str(survive_configuration) + '\n')
 
-                # active guard
-                file.write('ACTIVE GUARD' + '\n')
-                output_list.append('ACTIVE GUARD' + '\n')
-                print("ACTIVE GUARD")
-                output["Active Guard"][str(survive_configuration)][iteration-1] = run(file_name,deepFogGuardPlus,survive_configuration,output_list,training_labels,test_data,test_labels)
+            # deepFogGuard Plus
+            output_list.append('deepFogGuard Plus' + '\n')
+            print("deepFogGuard Plus")
+            output["deepFogGuard Plus"][str(survive_configuration)][iteration-1] = run(deepFogGuardPlus,survive_configuration,output_list,training_labels,test_data,test_labels)
 
-                # fixed guard
-                file.write('FIXED GUARD' + '\n')
-                output_list.append('FIXED GUARD' + '\n')
-                print("FIXED GUARD")
-                output["Fixed Guard"][str(survive_configuration)][iteration-1] = run(file_name,fixed_guard,survive_configuration,output_list,training_labels,test_data,test_labels)
+            # deepFogGuard
+            output_list.append('deepFogGuard' + '\n')
+            print("deepFogGuard")
+            output["deepFogGuard"][str(survive_configuration)][iteration-1] = run(deepFogGuard,survive_configuration,output_list,training_labels,test_data,test_labels)
 
-                # baseline fixed guard
-                file.write('BASELINE FIXED GUARD' + '\n')
-                output_list.append('BASELINE FIXED GUARD' + '\n')
-                print("BASELINE FIXED GUARD")
-                output["Baseline Fixed Guard"][str(survive_configuration)][iteration-1] = run(file_name,baseline_fixed_guard,survive_configuration,output_list,training_labels,test_data,test_labels)
+            # deepFogGuard Weight Ablation
+            output_list.append('deepFogGuard Weight Ablation' + '\n')
+            print("deepFogGuard Weight Ablation")
+            output["deepFogGuard Weight Ablation"][str(survive_configuration)][iteration-1] = run(deepFogGuard_weight_ablation,survive_configuration,output_list,training_labels,test_data,test_labels)
 
-                # baseline
-                file.write('BASELINE' + '\n')
-                output_list.append('BASELINE' + '\n')                    
-                print("BASELINE")
-                output["Baseline"][str(survive_configuration)][iteration-1] = run(file_name,baseline,survive_configuration,output_list,training_labels,test_data,test_labels)
+            # vanilla
+            output_list.append('Vanilla' + '\n')                    
+            print("Vanilla")
+            output["Vanilla"][str(survive_configuration)][iteration-1] = run(vanilla,survive_configuration,output_list,training_labels,test_data,test_labels)
 
-            # save files to GCP
-            # if use_GCP:
-            #     #os.system('gsutil -m cp -r *.h5 gs://anrl-storage/models')
-            #     # os.system('gsutil -m -q cp -r %s gs://anrl-storage/models' % active_guard_file)
-            #     # os.system('gsutil -m -q cp -r %s gs://anrl-storage/models' % fixed_guard_file)
-            #     # os.system('gsutil -m -q cp -r %s gs://anrl-storage/models' % baseline_fixed_guard_file)
-            #     # os.system('gsutil -m -q cp -r %s gs://anrl-storage/models' % baseline_file)
-
-        # runs baseline for active guard
-        with open(file_name,'a+') as file:
-            file.write('ACTIVE GUARD BASELINE' + '\n')
-        output_list.append('ACTIVE GUARD BASELINE' + '\n')                  
-        print("ACTIVE GUARD BASELINE")
+        # runs deepFogGuard Plus Ablation
+        output_list.append('deepFogGuard Plus Ablation' + '\n')                  
+        print("deepFogGuard Plus Ablation")
         for survive_configuration in activeguard_baseline_surviveconfigs:
             K.set_learning_phase(1)
-            baseline_activeguard_file = str(iteration) + " " + str(survive_configuration) + ' baseline_active_guard.h5'
-            baseline_active_guard_model = define_active_guard_model_with_connections(num_vars,num_classes,hidden_units,0,survive_configuration)
+            deepFogGuardPlus_Ablation_file = str(iteration) + " " + str(survive_configuration) + ' deepFogGuardPlus_Ablation.h5'
+            deepFogGuardPlus_ablation = deepFogGuardPlus(num_vars,num_classes,hidden_units,survive_configuration)
             if load_model:
-                baseline_active_guard_model.load_weights(baseline_activeguard_file)
+                deepFogGuardPlus_ablation.load_weights(deepFogGuardPlus_Ablation_file)
             else:
-                print("Training active guard baseline")
-                baseline_active_guard_model.fit(data,labels,epochs=10, batch_size=batch_size,verbose=verbose,shuffle = True)
-                baseline_active_guard_model.save_weights(baseline_activeguard_file)
-                # load trained weights and change active guard weights to normal
+                print("Training deepFogGuard Plus Ablation")
+                deepFogGuardPlus_ablation.fit(data,labels,epochs=10, batch_size=batch_size,verbose=verbose,shuffle = True)
+                deepFogGuardPlus_ablation.save_weights(deepFogGuardPlus_Ablation_file)
                 print("Test on normal survival rates")
                 output_list.append("Test on normal survival rates" + '\n')
                 for normal_survival_config in survive_configurations:
                     output_list.append(str(normal_survival_config)+ '\n')
-                    output["Baseline Active Guard"][str(survive_configuration)][str(normal_survival_config)][iteration-1] = run(file_name,baseline_active_guard_model,normal_survival_config,output_list,training_labels,test_data,test_labels)
-                    # test model 
-                # if use_GCP:
-                #      os.system('gsutil -om -q cp -r %s gs://anrl-storage/models' % baseline_activeguard_file)
-            # write results to a file 
-            with open(file_name,'a+') as file:
-                print(survive_configuration)
-                file.write(str(survive_configuration)+ '\n')
-                output_list.append(str(survive_configuration)+ '\n')
-                output["Baseline Active Guard"][str(survive_configuration)][iteration-1] = run(file_name,baseline_active_guard_model,survive_configuration,output_list,training_labels,test_data,test_labels)
+                    output["deepFogGuard Plus Ablation"][str(survive_configuration)][str(normal_survival_config)][iteration-1] = run(deepFogGuardPlus_ablation,normal_survival_config,output_list,training_labels,test_data,test_labels)
+        
+            print(survive_configuration)
+            output_list.append(str(survive_configuration)+ '\n')
+            output["deepFogGuard Plus Ablation"][str(survive_configuration)][iteration-1] = run(deepFogGuardPlus_ablation,survive_configuration,output_list,training_labels,test_data,test_labels)
+        # clear session so that model will recycled back into memory
+        K.clear_session()
+        gc.collect()
+        del deepFogGuard
+        del deepFogGuard_weight_ablation
+        del deepFogGuardPlus
+        del deepFogGuardPlus_ablation
+        del vanilla
+   # calculate average accuracies 
+    for survive_configuration in survive_configurations:
+        deepfogGuardPlus_acc = average(output["deepFogGuard Plus"][str(survive_configuration)])
+        deepFogGuard_acc = average(output["deepFogGuard"][str(survive_configuration)])
+        vanilla_acc = average(output["Vanilla"][str(survive_configuration)])
+        deepFogGuard_WeightAblation_acc = average(output["deepFogGuard Weight Ablation"][str(survive_configuration)])
 
-   # write average accuracies to a file 
-    with open(file_name,'a+') as file:
-        for survive_configuration in survive_configurations:
-            active_guard_acc = average(output["Active Guard"][str(survive_configuration)])
-            fixed_guard_acc = average(output["Fixed Guard"][str(survive_configuration)])
-            baseline_acc = average(output["Baseline"][str(survive_configuration)])
-            baseline_fixed_guard_acc = average(output["Baseline Fixed Guard"][str(survive_configuration)])
+        output_list.append(str(survive_configuration) + " deepFogGuard Plus Accuracy: " + str(deepfogGuardPlus_acc) + '\n')
+        output_list.append(str(survive_configuration) + " deepFogGuard Accuracy: " + str(deepFogGuard_acc) + '\n')
+        output_list.append(str(survive_configuration) + " Vanilla Accuracy: " + str(vanilla_acc) + '\n')
+        output_list.append(str(survive_configuration) + " deepFogGuard Weight Ablation: " + str(deepFogGuard_WeightAblation_acc) + '\n')
 
-            file.write(str(active_guard_acc) + '\n')
-            file.write(str(fixed_guard_acc) + '\n')
-            file.write(str(baseline_acc) + '\n')         
-            file.write(str(baseline_fixed_guard_acc) + '\n')
+        print(str(survive_configuration),"deepFogGuard Plus Accuracy:",deepfogGuardPlus_acc)
+        print(str(survive_configuration),"deepFogGuard Accuracy:",deepFogGuard_acc)
+        print(str(survive_configuration),"Vanilla Accuracy:",vanilla_acc)
+        print(str(survive_configuration),"deepFogGuard Weight Ablation:",deepFogGuard_WeightAblation_acc)
 
-            output_list.append(str(survive_configuration) + " ActiveGuard Accuracy: " + str(active_guard_acc) + '\n')
-            output_list.append(str(survive_configuration) + " FixedGuard Accuracy: " + str(fixed_guard_acc) + '\n')
-            output_list.append(str(survive_configuration) + " Baseline Accuracy: " + str(baseline_acc) + '\n')
-            output_list.append(str(survive_configuration) + " Baseline FixedGuard Accuracy: " + str(baseline_fixed_guard_acc) + '\n')
-
-            print(str(survive_configuration),"ActiveGuard Accuracy:",active_guard_acc)
-            print(str(survive_configuration),"FixedGuard Accuracy:",fixed_guard_acc)
-            print(str(survive_configuration),"Baseline Accuracy:",baseline_acc)
-            print(str(survive_configuration),"Baseline FixedGuard Accuracy:",baseline_fixed_guard_acc)
-
-        for survive_config in activeguard_baseline_surviveconfigs:
-            print(survive_config)
-            file.write(str(survive_config) + '\n')  
-            for original_survive_config in survive_configurations:
-                file.write(str(original_survive_config) + '\n')  
-                baseline_active_guard_acc = average(output["Baseline Active Guard"][str(survive_config)][str(original_survive_config)])
-                file.write(str(baseline_active_guard_acc) + '\n')  
-                output_list.append(str(survive_config) + str(original_survive_config) + " Baseline ActiveGuard Accuracy: " + str(baseline_active_guard_acc) + '\n')
-                print(survive_config,original_survive_config,"Baseline ActiveGuard Accuracy:",baseline_active_guard_acc)  
-        file.flush()
-        os.fsync(file)
+    # calculate average accuracies for deepFogGuard Plus Ablation
+    for survive_config in activeguard_baseline_surviveconfigs:
+        print(survive_config)
+        for original_survive_config in survive_configurations:
+            deepFogGuardPlus_Ablation_acc = average(output["deepFogGuard Plus Ablation"][str(survive_config)][str(original_survive_config)])
+            output_list.append(str(survive_config) + str(original_survive_config) + " deepFogGuard Plus Ablation: " + str(deepFogGuardPlus_Ablation_acc) + '\n')
+            print(survive_config,original_survive_config,"deepFogGuard Plus Ablation:",deepFogGuardPlus_Ablation_acc)  
     with open(output_name,'w') as file:
         file.write(str(output))
         file.writelines(output_list)
         file.flush()
         os.fsync(file)
     print(output)
-    if use_GCP:
-        os.system('gsutil -m -q cp -r {} gs://anrl-storage/results/'.format(file_name))
-        os.system('gsutil -m -q cp -r {} gs://anrl-storage/results/'.format(output_name))
