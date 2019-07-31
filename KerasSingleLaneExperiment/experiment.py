@@ -11,8 +11,6 @@ import datetime
 import gc
 import os
 
-# TODO: to add dropout abalation to actual model
-
 # runs all 3 failure configurations for all 3 models
 if __name__ == "__main__":
     use_GCP = True
