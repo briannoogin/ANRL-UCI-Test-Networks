@@ -43,7 +43,7 @@ if __name__ == "__main__":
     load_model = False
     now = datetime.datetime.now()
     date = str(now.month) + '-' + str(now.day) + '-' + str(now.year)
-    output_name = "results/newsplit_ablationHealthActivityExperiment.txt"
+    output_name = "results/newsplit_ablationHealthActivityExperiment_testwithsurvivability.txt"
     num_iterations = 10
     verbose = 2
     # keep track of output so that output is in order
@@ -162,8 +162,8 @@ if __name__ == "__main__":
 
         for survive_configuration in survive_configurations:
             # deepFogGuard weight ablation
-            deepFogGuard_weight_ablation = define_deepFogGuard(num_vars,num_classes,hidden_units,survive_configuration,isUnWeighted = False)
-            deepFogGuard_weight_ablation_file = str(iteration) + " " + str(survive_configuration) + '_new_split_deepFogGuard_weight_ablation.h5'
+            deepFogGuard_weight_ablation = define_deepFogGuard(num_vars,num_classes,hidden_units,survive_configuration, weight_config = 2)
+            deepFogGuard_weight_ablation_file = str(iteration) + " " + str(survive_configuration) + '_new_split_deepFogGuard_weight_ablation_testsurvivalrate.h5'
             if load_model:
                 deepFogGuard_weight_ablation.load_weights(deepFogGuard_weight_ablation_file)
             else:
@@ -193,7 +193,7 @@ if __name__ == "__main__":
             print("Vanilla")
             output["Vanilla"][str(survive_configuration)][iteration-1] = run(vanilla,survive_configuration,output_list,training_labels,test_data,test_labels)
 
-        # runs deepFogGuard Plus Ablation
+        #runs deepFogGuard Plus Ablation
         output_list.append('deepFogGuard Plus Ablation' + '\n')                  
         print("deepFogGuard Plus Ablation")
         for survive_configuration in deepFogGuardPlus_ablation_surviveconfigs:
@@ -221,10 +221,10 @@ if __name__ == "__main__":
         # clear session so that model will recycled back into memory
         K.clear_session()
         gc.collect()
-        #del deepFogGuard
+        del deepFogGuard
         del deepFogGuard_weight_ablation
-        #del deepFogGuardPlus
-        #del vanilla
+        del deepFogGuardPlus
+        del vanilla
    # calculate average accuracies 
     for survive_configuration in survive_configurations:
         deepfogGuardPlus_acc = average(output["deepFogGuard Plus"][str(survive_configuration)])
