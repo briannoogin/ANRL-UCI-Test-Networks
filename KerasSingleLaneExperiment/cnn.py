@@ -253,8 +253,6 @@ def define_Vanilla_CNN(input_shape=None,
 
         cloud = layers.GlobalAveragePooling2D()(cloud)
         cloud = layers.Reshape(shape, name='reshape_1')(cloud)
-        # dropout is only in the cloud node, we can potentially use it
-        cloud = layers.Dropout(dropout, name='dropout')(cloud)
         cloud = layers.Conv2D(classes, (1, 1),
                           padding='same',
                           name='conv_preds')(cloud)
@@ -302,7 +300,7 @@ def define_Vanilla_CNN(input_shape=None,
         model.load_weights(weights_path)
     elif weights is not None:
         model.load_weights(weights)
-
+    model.compile(loss='sparse_categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
     return model
 
 def define_deepFogGuard_CNN(input_shape=None,
@@ -509,8 +507,6 @@ def define_deepFogGuard_CNN(input_shape=None,
 
         cloud = layers.GlobalAveragePooling2D()(cloud)
         cloud = layers.Reshape(shape, name='reshape_1')(cloud)
-        # dropout is only in the cloud node, we can potentially use it
-        cloud = layers.Dropout(dropout, name='dropout')(cloud)
         cloud = layers.Conv2D(classes, (1, 1),
                           padding='same',
                           name='conv_preds')(cloud)
@@ -558,7 +554,7 @@ def define_deepFogGuard_CNN(input_shape=None,
         model.load_weights(weights_path)
     elif weights is not None:
         model.load_weights(weights)
-
+    model.compile(loss='sparse_categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
     return model
 
 def define_deepFogGuardPlus_CNN(input_shape=None,
@@ -758,8 +754,6 @@ def define_deepFogGuardPlus_CNN(input_shape=None,
 
         cloud = layers.GlobalAveragePooling2D()(cloud)
         cloud = layers.Reshape(shape, name='reshape_1')(cloud)
-        # dropout is only in the cloud node, we can potentially use it
-        cloud = layers.Dropout(dropout, name='dropout')(cloud)
         cloud = layers.Conv2D(classes, (1, 1),
                           padding='same',
                           name='conv_preds')(cloud)
@@ -807,7 +801,7 @@ def define_deepFogGuardPlus_CNN(input_shape=None,
         model.load_weights(weights_path)
     elif weights is not None:
         model.load_weights(weights)
-
+    model.compile(loss='sparse_categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
     return model
 
 def _conv_block(inputs, filters, alpha, kernel=(3, 3), strides=(1, 1)):

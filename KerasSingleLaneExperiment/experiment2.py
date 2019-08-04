@@ -88,6 +88,17 @@ def main():
                 "[0, 1, 1]":[0] * num_iterations,
                 "[1, 1, 1]":[0] * num_iterations
             },
+            "[1, 1, 1]":
+            {
+                "[0, 0, 0]":[0] * num_iterations,
+                "[1, 0, 0]":[0] * num_iterations,
+                "[0, 1, 0]":[0] * num_iterations,
+                "[0, 0, 1]":[0] * num_iterations,
+                "[1, 1, 0]":[0] * num_iterations,
+                "[1, 0, 1]":[0] * num_iterations,
+                "[0, 1, 1]":[0] * num_iterations,
+                "[1, 1, 1]":[0] * num_iterations
+            },
         }
     }
     # make folder for outputs 
