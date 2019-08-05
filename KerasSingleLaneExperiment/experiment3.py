@@ -165,10 +165,17 @@ def cnn_normal_experiments():
 def dropout_ablation():
     # get cifar10 data 
     (x_train, y_train), (x_test, y_test) = cifar10.load_data()
-    # normalize input
+     # normalize input
     x_train = x_train / 255
     x_test = x_test / 255
-    datagen = ImageDataGenerator(
+    # Concatenate train and test images
+    x = np.concatenate((x_train,x_test))
+    y = np.concatenate((y_train,y_test))
+
+    # split data into train, validation, and holdout set (80/10/10)
+    x_train, x_test, y_train, y_test = train_test_split(x,y,random_state = 42, test_size = .20, shuffle = True)
+    x_val, x_test, y_val, y_test = train_test_split(x_test,y_test,random_state = 42, test_size = .50, shuffle = True)
+    train_datagen = ImageDataGenerator(
     rotation_range=30,
     width_shift_range=0.2,
     height_shift_range=0.2,
@@ -226,19 +233,26 @@ def dropout_ablation():
     if not os.path.exists('results/' + date):
         os.mkdir('results/')
         os.mkdir('results/' + date)
-    file_name = 'results/' + date + '/experiment3_dropoutAblation_95_6to10results.txt'
+    file_name = 'results/' + date + '/experiment3_dropoutAblation_fixedsplit_results.txt'
     output_list = []
+    batch_size = 128
+    train_steps_per_epoch = math.ceil(len(x_train) / batch_size)
+    val_steps_per_epoch = math.ceil(len(x_val) / batch_size)
     for iteration in range(1,num_iterations+1):
         print("iteration:",iteration)
         for dropout in dropout_configs:
-            model_name = "GitHubANRL_deepFogGuardPlus_dropoutAblation95" + str(dropout) + "6to10" + str(iteration) + ".h5"
+            model_name = "GitHubANRL_deepFogGuardPlus_dropoutAblation" + str(dropout) + "_" + str(iteration) + ".h5"
             model = define_deepFogGuardPlus_CNN(weights = None,classes=10,input_shape = (32,32,3),dropout = 0, alpha = .5,survive_rates=dropout)
-            model.compile(loss='sparse_categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
-            num_samples = len(x_train)
-            batch_size = 128
-            steps_per_epoch = math.ceil(num_samples / batch_size)
-            model.fit_generator(datagen.flow(x_train,y_train,batch_size = batch_size),epochs = 75,validation_data = (x_test,y_test), steps_per_epoch = steps_per_epoch, verbose = 2)
-            model.save_weights(model_name)
+            modelCheckPoint = ModelCheckpoint(model_name, monitor='val_acc', verbose=1, save_best_only=True, save_weights_only=True, mode='auto', period=1)
+            model.fit_generator(train_datagen.flow(x_train,y_train,batch_size = batch_size),
+            epochs = 75,
+            validation_data = (x_val,y_val), 
+            steps_per_epoch = train_steps_per_epoch, 
+            verbose = 2, 
+            validation_steps = val_steps_per_epoch,
+            callbacks = [modelCheckPoint])
+            # load weights with the highest validaton acc
+            model.load_weights(model_name)
             for survive_config in survive_configs:
                 output_list.append(str(survive_config) + '\n')
                 print(survive_config)
@@ -251,9 +265,9 @@ def dropout_ablation():
         for survive_config in survive_configs:
             for dropout in dropout_configs:
                 output_list.append(str(survive_config) + '\n')
-                active_guard_acc = average(output["DeepFogGuard Plus Baseline"][str(dropout)][str(survive_config)])
-                output_list.append(str(survive_config) + str(dropout) + " Dropout Accuracy: " + str(active_guard_acc) + '\n')
-                print(str(survive_config), str(dropout), " Dropout Accuracy:",active_guard_acc)
+                deepGuardPlus_acc = average(output["DeepFogGuard Plus Baseline"][str(dropout)][str(survive_config)])
+                output_list.append(str(survive_config) + str(dropout) + " Dropout Accuracy: " + str(deepGuardPlus_acc) + '\n')
+                print(str(survive_config), str(dropout), " Dropout Accuracy:",deepGuardPlus_acc)
         file.writelines(output_list)
         file.flush()
         os.fsync(file)
@@ -266,10 +280,18 @@ def dropout_ablation():
 def hyperconnection_weight_ablation():
      # get cifar10 data 
     (x_train, y_train), (x_test, y_test) = cifar10.load_data()
+
     # normalize input
     x_train = x_train / 255
     x_test = x_test / 255
-    datagen = ImageDataGenerator(
+    # Concatenate train and test images
+    x = np.concatenate((x_train,x_test))
+    y = np.concatenate((y_train,y_test))
+
+    # split data into train, validation, and holdout set (80/10/10)
+    x_train, x_test, y_train, y_test = train_test_split(x,y,random_state = 42, test_size = .20, shuffle = True)
+    x_val, x_test, y_val, y_test = train_test_split(x_test,y_test,random_state = 42, test_size = .50, shuffle = True)
+    train_datagen = ImageDataGenerator(
     rotation_range=30,
     width_shift_range=0.2,
     height_shift_range=0.2,
@@ -297,18 +319,26 @@ def hyperconnection_weight_ablation():
     if not os.path.exists('results/' + date):
         os.mkdir('results/')
         os.mkdir('results/' + date)
-    file_name = 'results/' + date + '/experiment3_hyperconnection_weight_ablation_results.txt'
+    file_name = 'results/' + date + '/experiment3_hyperconnection_weight_ablation_weightedbys(i)_fixedsplit_results.txt'
     output_list = []
     for iteration in range(1,num_iterations+1):
         print("iteration:",iteration)
-        num_samples = len(x_train)
         batch_size = 128
-        steps_per_epoch = math.ceil(num_samples / batch_size)
+        train_steps_per_epoch = math.ceil(len(x_train) / batch_size)
+        val_steps_per_epoch = math.ceil(len(x_val) / batch_size)
         for survive_config in survive_configs:
-            model_name = "GitHubANRL_deepFogGuard_hyperconnectionweightablation_" + str(survive_config) + "_weights_alpha050_fixedstrides_dataaugmentation" + str(iteration) + ".h5"
-            model = define_deepFogGuard_CNN(weights = None,classes=10,input_shape = (32,32,3),dropout = 0, alpha = .5,hyperconnection_weights=survive_config)
-            model.fit_generator(datagen.flow(x_train,y_train,batch_size = batch_size),epochs = 75,validation_data = (x_test,y_test), steps_per_epoch = steps_per_epoch, verbose = 2)
-            model.save_weights(model_name)
+            model_name = "GitHubANRL_deepFogGuard_hyperconnectionweightablation_weightedbys(i)_" + str(survive_config) + "_fixedsplit_" + str(iteration) + ".h5"
+            model = define_deepFogGuard_CNN(weights = None,classes=10,input_shape = (32,32,3),dropout = 0, alpha = .5,hyperconnection_weights=survive_config, hyperconnection_weights_scheme = 2)
+            modelCheckPoint = ModelCheckpoint(model_name, monitor='val_acc', verbose=1, save_best_only=True, save_weights_only=True, mode='auto', period=1)
+            model.fit_generator(train_datagen.flow(x_train,y_train,batch_size = batch_size),
+            epochs = 75,
+            validation_data = (x_val,y_val), 
+            steps_per_epoch = train_steps_per_epoch, 
+            verbose = 2, 
+            validation_steps = val_steps_per_epoch,
+            callbacks = [modelCheckPoint])
+            # load weights with the highest validaton acc
+            model.load_weights(model_name)
             output_list.append(str(survive_config) + '\n')
             print(survive_config)
             output["DeepFogGuard Baseline"][str(survive_config)][iteration-1] = run(model, survive_config,output_list, y_train, x_test, y_test)
@@ -334,10 +364,18 @@ def hyperconnection_weight_ablation():
 def hyperconnection_sensitivity_ablation():
     # get cifar10 data 
     (x_train, y_train), (x_test, y_test) = cifar10.load_data()
+
     # normalize input
     x_train = x_train / 255
     x_test = x_test / 255
-    datagen = ImageDataGenerator(
+    # Concatenate train and test images
+    x = np.concatenate((x_train,x_test))
+    y = np.concatenate((y_train,y_test))
+
+    # split data into train, validation, and holdout set (80/10/10)
+    x_train, x_test, y_train, y_test = train_test_split(x,y,random_state = 42, test_size = .20, shuffle = True)
+    x_val, x_test, y_val, y_test = train_test_split(x_test,y_test,random_state = 42, test_size = .50, shuffle = True)
+    train_datagen = ImageDataGenerator(
     rotation_range=30,
     width_shift_range=0.2,
     height_shift_range=0.2,
@@ -387,22 +425,26 @@ def hyperconnection_sensitivity_ablation():
     if not os.path.exists('results/' + date):
         os.mkdir('results/')
         os.mkdir('results/' + date)
-    file_name = 'results/' + date + '/experiment3_hyperconnection_sensitivityablation_results3.txt'
+    file_name = 'results/' + date + '/experiment3_hyperconnection_sensitivityablation_fixedsplit_results3.txt'
     output_list = []
     for iteration in range(1,num_iterations+1):
         print("iteration:",iteration)
-        num_samples = len(x_train)
         batch_size = 128
-        steps_per_epoch = math.ceil(num_samples / batch_size)
+        train_steps_per_epoch = math.ceil(len(x_train) / batch_size)
+        val_steps_per_epoch = math.ceil(len(x_val) / batch_size)
         for hyperconnection in hyperconnections:
-            model_name = "GitHubANRL_deepFogGuardPlus_hyperconnectionsensitvityablation3" + str(hyperconnection) + "_weights_alpha050_fixedstrides_dataaugmentation" + str(iteration) + ".h5"
+            model_name = "GitHubANRL_deepFogGuardPlus_hyperconnectionsensitvityablation" + str(hyperconnection) + "_fixedsplit_" + str(iteration) + ".h5"
             model = define_deepFogGuard_CNN(weights = None,classes=10,input_shape = (32,32,3),dropout = 0, alpha = .5,hyperconnections = hyperconnection)
-            model.compile(loss='sparse_categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
-            num_samples = len(x_train)
-            batch_size = 128
-            steps_per_epoch = math.ceil(num_samples / batch_size)
-            model.fit_generator(datagen.flow(x_train,y_train,batch_size = batch_size),epochs = 75,validation_data = (x_test,y_test), steps_per_epoch = steps_per_epoch, verbose = 2)
-            model.save_weights(model_name)
+            modelCheckPoint = ModelCheckpoint(model_name, monitor='val_acc', verbose=1, save_best_only=True, save_weights_only=True, mode='auto', period=1)
+            model.fit_generator(train_datagen.flow(x_train,y_train,batch_size = batch_size),
+            epochs = 75,
+            validation_data = (x_val,y_val), 
+            steps_per_epoch = train_steps_per_epoch, 
+            verbose = 2, 
+            validation_steps = val_steps_per_epoch,
+            callbacks = [modelCheckPoint])
+            # load weights with the highest validaton acc
+            model.load_weights(model_name)
             for survive_config in survive_configs:
                 output_list.append(str(survive_config) + '\n')
                 print(survive_config)
@@ -431,7 +473,7 @@ def hyperconnection_sensitivity_ablation():
 
 # cnn experiment 
 if __name__ == "__main__":
-    cnn_normal_experiments()
-    # dropout_ablation()
+    #cnn_normal_experiments()
+    #dropout_ablation()
     #hyperconnection_weight_ablation()
-    # hyperconnection_sensitivity_ablation()
+    hyperconnection_sensitivity_ablation()
