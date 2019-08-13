@@ -19,8 +19,7 @@ if __name__ == "__main__":
         os.system('gsutil -m cp -r gs://anrl-storage/data/mHealth_complete.log ./')
         os.mkdir('models/')
     data,labels= load_data('mHealth_complete.log')
-    # split data into train, val, and test
-    # 80/10/10 split
+    # split data into train, val, and test, 80/10/10 split
     training_data, test_data, training_labels, test_labels = train_test_split(data,labels,random_state = 42, test_size = .20, shuffle = True)
     val_data, test_data, val_labels, test_labels = train_test_split(test_data,test_labels,random_state = 42, test_size = .50, shuffle = True)
     num_vars = len(training_data[0])
@@ -32,21 +31,16 @@ if __name__ == "__main__":
         [1,1,1]
     ]
     nodewide_survival_rate = [.95,.95,.95]
-    # survibility configurations for deepFogGuardPlus baseline
-    deepFogGuardPlus_ablation_dropoutrate = [
-        [.95,.95,.95],
-        [.9,.9,.9],
-        [.7,.7,.7],
-        [.5,.5,.5],
-    ]
     hidden_units = 250
     batch_size = 1028
     load_model = False
     num_train_epochs = 25 
+
     # file name with the experiments accuracy output
-    output_name = "results/newsplit_ablationHealthActivityExperiment_testwithsurvivability.txt"
+    output_name = "results/health_normal.txt"
     num_iterations = 10
     verbose = 2
+
     # keep track of output so that output is in order
     output_list = []
     
@@ -55,6 +49,7 @@ if __name__ == "__main__":
     normal = "[0.92, 0.96, 0.99]"
     poor = "[0.87, 0.91, 0.95]"
     hazardous = "[0.78, 0.8, 0.85]"
+
     # dictionary to store all the results
     output = {
         "deepFogGuard Plus":
@@ -87,7 +82,6 @@ if __name__ == "__main__":
         output_list.append('ITERATION ' + str(iteration) +  '\n')
         print("ITERATION ", iteration)
         K.set_learning_phase(1)
-        # create models
 
         # deepFogGuardPlus
         deepFogGuardPlus = define_deepFogGuardPlus(num_vars,num_classes,hidden_units,nodewide_survival_rate)
@@ -112,7 +106,6 @@ if __name__ == "__main__":
             deepFogGuard.fit(training_data,training_labels,epochs=num_train_epochs, batch_size=batch_size,verbose=verbose,shuffle = True, callbacks = [dFGCheckPoint], validation_data=(val_data,val_labels))
             # load weights from epoch with the highest val acc
             deepFogGuard.load_weights(deepFogGuard_file)
-
 
         # vanilla model
         vanilla = define_vanilla_model(num_vars,num_classes,hidden_units)
@@ -152,7 +145,7 @@ if __name__ == "__main__":
         del deepFogGuard
         del deepFogGuardPlus
         del vanilla
-   # calculate average accuracies 
+   # calculate average accuracies from all expected accuracies
     for survive_configuration in survive_configurations:
         deepfogGuardPlus_acc = average(output["deepFogGuard Plus"][str(survive_configuration)])
         deepFogGuard_acc = average(output["deepFogGuard"][str(survive_configuration)])
@@ -166,6 +159,7 @@ if __name__ == "__main__":
         print(str(survive_configuration),"deepFogGuard Accuracy:",deepFogGuard_acc)
         print(str(survive_configuration),"Vanilla Accuracy:",vanilla_acc)
 
+    # write experiments output to file
     with open(output_name,'w') as file:
         file.writelines(output_list)
         file.flush()
