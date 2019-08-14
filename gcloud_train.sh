@@ -1,10 +1,12 @@
 
-TRAINER_PACKAGE_PATH="./experiment"
-MAIN_TRAINER_MODULE="experiment.experiment2"
+TRAINER_PACKAGE_PATH="./KerasSingleLaneExperiment"
+experiment="cifar_average_accuracy"
+MAIN_TRAINER_MODULE="KerasSingleLaneExperiment.$experiment"
 PACKAGE_STAGING_PATH="gs://anrl-storage"
 
+
 now=$(date +"%m%d%Y_%H%M%S")
-JOB_NAME="ANRL_experiment2_$now"
+JOB_NAME="ANRL_$experiment_$now"
 MODEL_NAME=$JOB_NAME.h5
 JOB_DIR="gs://anrl-storage"
 REGION="us-central1"
