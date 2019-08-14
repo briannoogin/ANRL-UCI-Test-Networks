@@ -24,7 +24,7 @@ if __name__ == "__main__":
     val_data, test_data, val_labels, test_labels = train_test_split(test_data,test_labels,random_state = 42, test_size = .50, shuffle = True)
     num_vars = len(training_data[0])
     num_classes = 13
-    survive_settings = [
+    survivability_settings = [
         [.78,.8,.85],
         [.87,.91,.95],
         [.92,.96,.99],
@@ -45,11 +45,11 @@ if __name__ == "__main__":
     # keep track of output so that output is in order
     output_list = []
     
-    # declare survival settings
-    no_failure = "[1, 1, 1]"
-    normal = "[0.92, 0.96, 0.99]"
-    poor = "[0.87, 0.91, 0.95]"
-    hazardous = "[0.78, 0.8, 0.85]"
+    # convert survivability settings into strings so it can be used in the dictionary as keys
+    no_failure = str(survivability_settings[0])
+    normal = str(survivability_settings[1])
+    poor = str(survivability_settings[2])
+    hazardous = str(survivability_settings[3])
 
     # dictionary to store all the results
     output = {
@@ -82,7 +82,6 @@ if __name__ == "__main__":
     for iteration in range(1,num_iterations+1):   
         output_list.append('ITERATION ' + str(iteration) +  '\n')
         print("ITERATION ", iteration)
-        K.set_learning_phase(1)
 
         # deepFogGuardPlus
         deepFogGuardPlus = define_deepFogGuardPlus(num_vars,num_classes,hidden_units,default_nodewise_survival_rate)
@@ -121,24 +120,22 @@ if __name__ == "__main__":
             vanilla.load_weights(vanilla_file)
  
         # test models
-        K.set_learning_phase(0)
-
-        for survive_setting in survive_settings:
+        for survivability_setting in survivability_settings:
          
             # deepFogGuard Plus
             output_list.append('deepFogGuard Plus' + '\n')
             print("deepFogGuard Plus")
-            output["deepFogGuard Plus"][str(survive_setting)][iteration-1] = calculateExpectedAccuracy(deepFogGuardPlus,survive_setting,output_list,training_labels,test_data,test_labels)
+            output["deepFogGuard Plus"][str(survivability_setting)][iteration-1] = calculateExpectedAccuracy(deepFogGuardPlus,survivability_setting,output_list,training_labels,test_data,test_labels)
 
             # deepFogGuard
             output_list.append('deepFogGuard' + '\n')
             print("deepFogGuard")
-            output["deepFogGuard"][str(survive_setting)][iteration-1] = calculateExpectedAccuracy(deepFogGuard,survive_setting,output_list,training_labels,test_data,test_labels)
+            output["deepFogGuard"][str(survivability_setting)][iteration-1] = calculateExpectedAccuracy(deepFogGuard,survivability_setting,output_list,training_labels,test_data,test_labels)
 
             # vanilla
             output_list.append('Vanilla' + '\n')                    
             print("Vanilla")
-            output["Vanilla"][str(survive_setting)][iteration-1] = calculateExpectedAccuracy(vanilla,survive_setting,output_list,training_labels,test_data,test_labels)
+            output["Vanilla"][str(survivability_setting)][iteration-1] = calculateExpectedAccuracy(vanilla,survivability_setting,output_list,training_labels,test_data,test_labels)
 
         # clear session so that model will recycled back into memory
         K.clear_session()
@@ -147,24 +144,25 @@ if __name__ == "__main__":
         del deepFogGuardPlus
         del vanilla
    # calculate average accuracies from all expected accuracies
-    for survive_setting in survive_settings:
-        deepfogGuardPlus_acc = average(output["deepFogGuard Plus"][str(survive_setting)])
-        deepFogGuard_acc = average(output["deepFogGuard"][str(survive_setting)])
-        vanilla_acc = average(output["Vanilla"][str(survive_setting)])
+    for survivability_setting in survivability_settings:
+        deepfogGuardPlus_acc = average(output["deepFogGuard Plus"][str(survivability_setting)])
+        deepFogGuard_acc = average(output["deepFogGuard"][str(survivability_setting)])
+        vanilla_acc = average(output["Vanilla"][str(survivability_setting)])
 
-        output_list.append(str(survive_setting) + " deepFogGuard Plus Accuracy: " + str(deepfogGuardPlus_acc) + '\n')
-        output_list.append(str(survive_setting) + " deepFogGuard Accuracy: " + str(deepFogGuard_acc) + '\n')
-        output_list.append(str(survive_setting) + " Vanilla Accuracy: " + str(vanilla_acc) + '\n')
+        output_list.append(str(survivability_setting) + " deepFogGuard Plus Accuracy: " + str(deepfogGuardPlus_acc) + '\n')
+        output_list.append(str(survivability_setting) + " deepFogGuard Accuracy: " + str(deepFogGuard_acc) + '\n')
+        output_list.append(str(survivability_setting) + " Vanilla Accuracy: " + str(vanilla_acc) + '\n')
 
-        print(str(survive_setting),"deepFogGuard Plus Accuracy:",deepfogGuardPlus_acc)
-        print(str(survive_setting),"deepFogGuard Accuracy:",deepFogGuard_acc)
-        print(str(survive_setting),"Vanilla Accuracy:",vanilla_acc)
+        print(str(survivability_setting),"deepFogGuard Plus Accuracy:",deepfogGuardPlus_acc)
+        print(str(survivability_setting),"deepFogGuard Accuracy:",deepFogGuard_acc)
+        print(str(survivability_setting),"Vanilla Accuracy:",vanilla_acc)
 
     # write experiments output to file
     with open(output_name,'w') as file:
         file.writelines(output_list)
         file.flush()
         os.fsync(file)
+    # upload file to GCP
     if use_GCP:
         os.system('gsutil -m -q cp -r {} gs://anrl-storage/results/'.format(output_name))
     print(output)
