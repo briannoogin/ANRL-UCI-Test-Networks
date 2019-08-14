@@ -40,7 +40,7 @@ if __name__ == "__main__":
     load_model = False
     num_train_epochs = 25 
     # file name with the experiments accuracy output
-    output_name = "results/health_dropout_ablation.txt"
+    output_name = "results/health_nodewise_dropout.txt"
     num_iterations = 10
     verbose = 2
     # keep track of output so that output is in order

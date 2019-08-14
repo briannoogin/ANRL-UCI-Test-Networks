@@ -32,6 +32,7 @@ if __name__ == "__main__":
     ]
     default_nodewise_survival_rate = [.95,.95,.95]
     allpresent_skip_hyperconnections_configuration = [1,1,1]
+    default_survivability_setting = [1,1,1]
     hidden_units = 250
     batch_size = 1028
     load_model = False
@@ -96,7 +97,7 @@ if __name__ == "__main__":
             deepFogGuardPlus.load_weights(deepFogGuardPlus_file)
 
         # deepFogGuard
-        deepFogGuard = define_deepFogGuard(num_vars,num_classes,hidden_units,allpresent_skip_hyperconnections_configuration)
+        deepFogGuard = define_deepFogGuard(num_vars,num_classes,hidden_units,default_survivability_setting,allpresent_skip_hyperconnections_configuration)
         deepFogGuard_file = "new_split_" + str(iteration) + '_deepFogGuard.h5'
         if load_model:
             deepFogGuard.load_weights(deepFogGuard_file)

@@ -1,13 +1,10 @@
-# survibility configurations for deepFogGuardPlus basleline
-from KerasSingleLaneExperiment.deepFogGuardPlus import define_deepFogGuardPlus
+
 from KerasSingleLaneExperiment.deepFogGuard import define_deepFogGuard
-from KerasSingleLaneExperiment.Vanilla import define_vanilla_model
 from KerasSingleLaneExperiment.loadData import load_data
 from sklearn.model_selection import train_test_split
 from KerasSingleLaneExperiment.FailureIteration import calculateExpectedAccuracy
 from KerasSingleLaneExperiment.main import average
 import keras.backend as K
-import datetime
 import gc
 import os
 from keras.callbacks import ModelCheckpoint
@@ -31,13 +28,12 @@ if __name__ == "__main__":
         [.87,.91,.95],
         [.78,.8,.85],
     ]
-    nodewide_survival_rate = [.95,.95,.95]
     hidden_units = 250
     batch_size = 1028
     load_model = False
     num_train_epochs = 25 
     # file name with the experiments accuracy output
-    output_name = "results/health_weight_ablation.txt"
+    output_name = "results/health_hyperconnection_weight.txt"
     num_iterations = 10
     verbose = 2
     # keep track of output so that output is in order
