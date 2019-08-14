@@ -23,7 +23,6 @@ if __name__ == "__main__":
     num_vars = len(training_data[0])
     num_classes = 13
     survivability_settings = [
-        [1,1,1],
         [.92,.96,.99],
         [.87,.91,.95],
         [.78,.8,.85],
@@ -41,19 +40,17 @@ if __name__ == "__main__":
     output_list = []
     
     # convert survivability settings into strings so it can be used in the dictionary as keys
-    no_failure = str(survivability_settings[0])
-    normal = str(survivability_settings[1])
-    poor = str(survivability_settings[2])
-    hazardous = str(survivability_settings[3])
+    normal = str(survivability_settings[0])
+    poor = str(survivability_settings[1])
+    hazardous = str(survivability_settings[2])
 
     # dictionary to store all the results
     output = {
-        "deepFogGuard Weight Ablation": 
+        "DeepFogGuard Hyperconnection Weight": 
         {
             hazardous:[0] * num_iterations,
             poor:[0] * num_iterations,
             normal:[0] * num_iterations,
-            no_failure:[0] * num_iterations,
         },
     }
 
@@ -65,27 +62,27 @@ if __name__ == "__main__":
         print("ITERATION ", iteration)
 
         for survivability_setting in survivability_settings:
-            # deepFogGuard weight ablation
-            deepFogGuard_weight_ablation = define_deepFogGuard(num_vars,num_classes,hidden_units,survivability_setting, weight_config = hyperconnection_weightedbysurvivability_config)
-            deepFogGuard_weight_ablation_file = str(iteration) + " " + str(survivability_setting) + '_new_split_deepFogGuard_weight_ablation_testsurvivalrate.h5'
+            # deepFogGuard hyperconnection_weight ablation
+            deepFogGuard_hyperconnection_weight = define_deepFogGuard(num_vars,num_classes,hidden_units,survivability_setting, weight_config = hyperconnection_weightedbysurvivability_config)
+            deepFogGuard_hyperconnection_weight_file = str(iteration) + " " + str(survivability_setting) + '_new_split_deepFogGuard_weight_ablation_testsurvivalrate.h5'
             if load_model:
-                deepFogGuard_weight_ablation.load_weights(deepFogGuard_weight_ablation_file)
+                deepFogGuard_hyperconnection_weight.load_weights(deepFogGuard_hyperconnection_weight_file)
             else:
-                print("Training deepFogGuard Weight Ablation")
-                deepFogGuard_weight_ablation_CheckPoint = ModelCheckpoint(deepFogGuard_weight_ablation_file, monitor='val_acc', verbose=1, save_best_only=True, save_weights_only=True, mode='auto', period=1)
-                deepFogGuard_weight_ablation.fit(training_data,training_labels,epochs=num_train_epochs, batch_size=batch_size,verbose=verbose,shuffle = True, callbacks = [deepFogGuard_weight_ablation_CheckPoint],validation_data=(val_data,val_labels))
+                print("DeepFogGuard Hyperconnection Weight")
+                deepFogGuard_hyperconnection_weight_CheckPoint = ModelCheckpoint(deepFogGuard_hyperconnection_weight_file, monitor='val_acc', verbose=1, save_best_only=True, save_weights_only=True, mode='auto', period=1)
+                deepFogGuard_hyperconnection_weight.fit(training_data,training_labels,epochs=num_train_epochs, batch_size=batch_size,verbose=verbose,shuffle = True, callbacks = [deepFogGuard_hyperconnection_weight_CheckPoint],validation_data=(val_data,val_labels))
                 # load weights from epoch with the highest val acc
-                deepFogGuard_weight_ablation.load_weights(deepFogGuard_weight_ablation_file)
+                deepFogGuard_hyperconnection_weight.load_weights(deepFogGuard_hyperconnection_weight_file)
 
         # clear session so that model will recycled back into memory
         K.clear_session()
         gc.collect()
-        del deepFogGuard_weight_ablation
+        del deepFogGuard_hyperconnection_weight
    # calculate average accuracies 
     for survivability_setting in survivability_settings:
-        deepFogGuard_WeightAblation_acc = average(output["deepFogGuard Weight Ablation"][str(survivability_setting)])
-        output_list.append(str(survivability_setting) + " deepFogGuard Weight Ablation: " + str(deepFogGuard_WeightAblation_acc) + '\n')
-        print(str(survivability_setting),"deepFogGuard Weight Ablation:",deepFogGuard_WeightAblation_acc)
+        deepFogGuard_hyperconnection_weight_acc = average(output["DeepFogGuard Hyperconnection Weight"][str(survivability_setting)])
+        output_list.append(str(survivability_setting) + " DeepFogGuard Hyperconnection Weight: " + str(deepFogGuard_hyperconnection_weight_acc) + '\n')
+        print(str(survivability_setting),"DeepFogGuard Hyperconnection Weight:",deepFogGuard_hyperconnection_weight_acc)
     # write experiments output to file
     with open(output_name,'w') as file:
         file.writelines(output_list)

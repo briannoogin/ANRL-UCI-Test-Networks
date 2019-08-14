@@ -1,4 +1,4 @@
-# survibility configurations for deepFogGuardPlus basleline
+
 from KerasSingleLaneExperiment.deepFogGuardPlus import define_deepFogGuardPlus
 from KerasSingleLaneExperiment.loadData import load_data
 from sklearn.model_selection import train_test_split
@@ -28,7 +28,7 @@ if __name__ == "__main__":
         [.87,.91,.95],
         [.78,.8,.85],
     ]
-    # survival configurations for deepFogGuardPlus baseline
+    # nodewise survival rates for deepFogGuardPlus
     # elements of the vector are 1 - node-wise_dropout_rate
     nodewise_survival_rates = [
         [.95,.95,.95],
@@ -102,26 +102,26 @@ if __name__ == "__main__":
         output_list.append('deepFogGuardPlus Node-wise Dropout' + '\n')                  
         print("deepFogGuardPlus Node-wise Dropout")
         for nodewise_survival_rate in nodewise_survival_rates:
-            deepFogGuardPlus_Ablation_file = str(iteration) + " " + str(nodewise_survival_rate) + '_new_split_deepFogGuardPlus_Ablation.h5'
-            deepFogGuardPlus_ablation = define_deepFogGuardPlus(num_vars,num_classes,hidden_units,nodewise_survival_rate)
+            deepFogGuardPlus_nodwise_dropout_file = str(iteration) + " " + str(nodewise_survival_rate) + '_new_split_deepFogGuardPlus_Ablation.h5'
+            deepFogGuardPlus_nodewise_dropout = define_deepFogGuardPlus(num_vars,num_classes,hidden_units,nodewise_survival_rate)
             if load_model:
-                deepFogGuardPlus_ablation.load_weights(deepFogGuardPlus_Ablation_file)
+                deepFogGuardPlus_nodewise_dropout.load_weights(deepFogGuardPlus_nodwise_dropout_file)
             else:
                 print("Training deepFogGuardPlus Node-wise Dropout")
                 print(str(nodewise_survival_rate))
-                deepFogGuardPlus_ablation_CheckPoint = ModelCheckpoint(deepFogGuardPlus_Ablation_file, monitor='val_acc', verbose=1, save_best_only=True, save_weights_only=True, mode='auto', period=1)
-                deepFogGuardPlus_ablation.fit(training_data,training_labels,epochs=num_train_epochs, batch_size=batch_size,verbose=verbose,shuffle = True, callbacks = [deepFogGuardPlus_ablation_CheckPoint],validation_data=(val_data,val_labels))
-                deepFogGuardPlus_ablation.load_weights(deepFogGuardPlus_Ablation_file)
+                deepFogGuardPlus_nodewise_dropout_CheckPoint = ModelCheckpoint(deepFogGuardPlus_nodwise_dropout_file, monitor='val_acc', verbose=1, save_best_only=True, save_weights_only=True, mode='auto', period=1)
+                deepFogGuardPlus_nodewise_dropout.fit(training_data,training_labels,epochs=num_train_epochs, batch_size=batch_size,verbose=verbose,shuffle = True, callbacks = [deepFogGuardPlus_nodewise_dropout_CheckPoint],validation_data=(val_data,val_labels))
+                deepFogGuardPlus_nodewise_dropout.load_weights(deepFogGuardPlus_nodwise_dropout_file)
                 print("Test on normal survival rates")
                 output_list.append("Test on normal survival rates" + '\n')
-                for survival_config in survivability_settings:
-                    output_list.append(str(survival_config)+ '\n')
-                    print(survival_config)
-                    output["deepFogGuardPlus Node-wise Dropout"][str(nodewise_survival_rate)][str(survival_config)][iteration-1] = calculateExpectedAccuracy(deepFogGuardPlus_ablation,survival_config,output_list,training_labels,test_data,test_labels)
+                for survivability_setting in survivability_settings:
+                    output_list.append(str(survivability_setting)+ '\n')
+                    print(survivability_setting)
+                    output["deepFogGuardPlus Node-wise Dropout"][str(nodewise_survival_rate)][str(survivability_setting)][iteration-1] = calculateExpectedAccuracy(deepFogGuardPlus_nodewise_dropout,survivability_setting,output_list,training_labels,test_data,test_labels)
             # clear session so that model will recycled back into memory
             K.clear_session()
             gc.collect()
-            del deepFogGuardPlus_ablation
+            del deepFogGuardPlus_nodewise_dropout
 
     # calculate average accuracies for deepFogGuardPlus Node-wise Dropout
     for nodewise_survival_rate in nodewise_survival_rates:

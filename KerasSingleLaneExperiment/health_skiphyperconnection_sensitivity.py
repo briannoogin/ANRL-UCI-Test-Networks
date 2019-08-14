@@ -30,7 +30,7 @@ if __name__ == "__main__":
         [.87,.91,.95],
         [.78,.8,.85],
     ]
-    hyperconnection_configurations = [
+    skip_hyperconnection_configurations = [
         [0,0,0],
         [1,0,0],
         [0,1,0],
@@ -54,14 +54,14 @@ if __name__ == "__main__":
     output_list = []
 
     # convert hyperconnection configuration into strings to be used as keys for dictionary
-    config_1 = str(hyperconnection_configurations[0])
-    config_2 = str(hyperconnection_configurations[1])
-    config_3 = str(hyperconnection_configurations[2])
-    config_4 = str(hyperconnection_configurations[3])
-    config_5 = str(hyperconnection_configurations[4])
-    config_6 = str(hyperconnection_configurations[5])
-    config_7 = str(hyperconnection_configurations[6])
-    config_8 = str(hyperconnection_configurations[7])
+    config_1 = str(skip_hyperconnection_configurations[0])
+    config_2 = str(skip_hyperconnection_configurations[1])
+    config_3 = str(skip_hyperconnection_configurations[2])
+    config_4 = str(skip_hyperconnection_configurations[3])
+    config_5 = str(skip_hyperconnection_configurations[4])
+    config_6 = str(skip_hyperconnection_configurations[5])
+    config_7 = str(skip_hyperconnection_configurations[6])
+    config_8 = str(skip_hyperconnection_configurations[7])
 
     # convert survivability settings into strings so it can be used in the dictionary as keys
     no_failure = str(survivability_settings[0])
@@ -125,11 +125,11 @@ if __name__ == "__main__":
     for iteration in range(1,num_iterations+1):   
         output_list.append('ITERATION ' + str(iteration) +  '\n')
         print("ITERATION ", iteration)
-        for hyperconnection_configuration in hyperconnection_configurations:
+        for skip_hyperconnection_configuration in skip_hyperconnection_configurations:
           
             # deepFogGuard
-            deepFogGuard = define_deepFogGuard(num_vars,num_classes,hidden_units,default_survivability_setting,hyperconnection_configuration)
-            deepFogGuard_file = str(iteration) + " " + str(hyperconnection_configuration) +  'health_skiphyperconnection_sensitivity_deepFogGuard.h5'
+            deepFogGuard = define_deepFogGuard(num_vars,num_classes,hidden_units,default_survivability_setting,skip_hyperconnection_configuration)
+            deepFogGuard_file = str(iteration) + " " + str(skip_hyperconnection_configuration) +  'health_skiphyperconnection_sensitivity_deepFogGuard.h5'
             if load_model:
                 deepFogGuard.load_weights(deepFogGuard_file)
             else:
@@ -142,14 +142,14 @@ if __name__ == "__main__":
             # test models
             for survivability_setting in survivability_settings:
                 # write results to a file 
-                # survival configurations
+                # survival setting
                 print(survivability_setting)
                 output_list.append(str(survivability_setting) + '\n')
 
                 # deepFogGuard
                 output_list.append('deepFogGuard' + '\n')
                 print("deepFogGuard")
-                output["deepFogGuard"][str(survivability_setting)][str(hyperconnection_configuration)][iteration-1] = calculateExpectedAccuracy(deepFogGuard,survivability_setting,output_list,training_labels,test_data,test_labels)
+                output["deepFogGuard"][str(survivability_setting)][str(skip_hyperconnection_configuration)][iteration-1] = calculateExpectedAccuracy(deepFogGuard,survivability_setting,output_list,training_labels,test_data,test_labels)
 
             # clear session to remove old graphs from memory so that subsequent training is not slower
             K.clear_session()
@@ -160,15 +160,15 @@ if __name__ == "__main__":
     with open(file_name,'a+') as file:
         for survivability_setting in survivability_settings:
             output_list.append(str(survivability_setting) + '\n')
-            for hyperconnection_configuration in hyperconnection_configurations:
-                output_list.append(str(hyperconnection_configuration) + '\n')
-                deepFogGuard_acc = average(output["deepFogGuard"][str(survivability_setting)][str(hyperconnection_configuration)])
-                deepFogGuard_std = np.std(output["deepFogGuard"][str(survivability_setting)][str(hyperconnection_configuration)],ddof=1)
+            for skip_hyperconnection_configuration in skip_hyperconnection_configurations:
+                output_list.append(str(skip_hyperconnection_configuration) + '\n')
+                deepFogGuard_acc = average(output["deepFogGuard"][str(survivability_setting)][str(skip_hyperconnection_configuration)])
+                deepFogGuard_std = np.std(output["deepFogGuard"][str(survivability_setting)][str(skip_hyperconnection_configuration)],ddof=1)
                 # write to output list
-                output_list.append(str(survivability_setting) + " " + str(hyperconnection_configuration) + " deepFogGuard Accuracy: " + str(deepFogGuard_acc) + '\n')
-                print(str(survivability_setting),str(hyperconnection_configuration),"deepFogGuard Accuracy:",deepFogGuard_acc)
-                output_list.append(str(survivability_setting) + " " + str(hyperconnection_configuration) + " deepFogGuard std: " + str(deepFogGuard_std) + '\n')
-                print(str(survivability_setting),str(hyperconnection_configuration),"deepFogGuard std:",deepFogGuard_std)
+                output_list.append(str(survivability_setting) + " " + str(skip_hyperconnection_configuration) + " deepFogGuard Accuracy: " + str(deepFogGuard_acc) + '\n')
+                print(str(survivability_setting),str(skip_hyperconnection_configuration),"deepFogGuard Accuracy:",deepFogGuard_acc)
+                output_list.append(str(survivability_setting) + " " + str(skip_hyperconnection_configuration) + " deepFogGuard std: " + str(deepFogGuard_std) + '\n')
+                print(str(survivability_setting),str(skip_hyperconnection_configuration),"deepFogGuard std:",deepFogGuard_std)
         file.writelines(output_list)
         file.flush()
         os.fsync(file)
