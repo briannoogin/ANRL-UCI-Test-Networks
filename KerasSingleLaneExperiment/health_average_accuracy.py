@@ -25,10 +25,10 @@ if __name__ == "__main__":
     num_vars = len(training_data[0])
     num_classes = 13
     survivability_settings = [
-        [.78,.8,.85],
-        [.87,.91,.95],
+        [1,1,1],
         [.92,.96,.99],
-        [1,1,1]
+        [.87,.91,.95],
+        [.78,.8,.85],
     ]
     default_nodewise_survival_rate = [.95,.95,.95]
     allpresent_skip_hyperconnections_configuration = [1,1,1]
