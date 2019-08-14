@@ -54,10 +54,10 @@ if __name__ == "__main__":
     hazardous = str(survivability_settings[3])
     
     # convert dropout rates into strings
-    nodewise_dropout_rate_05 =  "[0.95, 0.95, 0.95]"
-    nodewise_dropout_rate_10 = "[0.9, 0.9, 0.9]"
-    nodewise_dropout_rate_30 = "[0.7, 0.7, 0.7]"
-    nodewise_dropout_rate_50 = "[0.5, 0.5, 0.5]"
+    nodewise_dropout_rate_05 =  str(nodewise_survival_rates[0])
+    nodewise_dropout_rate_10 = str(nodewise_survival_rates[1])
+    nodewise_dropout_rate_30 = str(nodewise_survival_rates[2])
+    nodewise_dropout_rate_50 = str(nodewise_survival_rates[3])
     # dictionary to store all the results
     output = {
         "deepFogGuardPlus Node-wise Dropout": 
