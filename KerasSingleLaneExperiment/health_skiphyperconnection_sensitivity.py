@@ -41,6 +41,7 @@ if __name__ == "__main__":
         [1,1,1],
     ]
     default_survivability_setting = [1,1,1]
+    num_train_epochs = 25 
     hidden_units = 250
     batch_size = 1028
     load_model = False
@@ -62,11 +63,16 @@ if __name__ == "__main__":
     config_7 = str(hyperconnection_configurations[6])
     config_8 = str(hyperconnection_configurations[7])
 
+    # convert survivability settings into strings so it can be used in the dictionary as keys
+    no_failure = str(survivability_settings[0])
+    normal = str(survivability_settings[1])
+    poor = str(survivability_settings[2])
+    hazardous = str(survivability_settings[3])
     # dictionary to store all the results
     output = {
         "deepFogGuard":
         {
-            "[0.78, 0.8, 0.85]":
+            hazardous:
             {
                 config_1:[0] * num_iterations,
                 config_2:[0] * num_iterations,
@@ -77,7 +83,7 @@ if __name__ == "__main__":
                 config_7:[0] * num_iterations,
                 config_8:[0] * num_iterations
             },
-            "[0.87, 0.91, 0.95]":
+            poor:
             {
                 config_1:[0] * num_iterations,
                 config_2:[0] * num_iterations,
@@ -88,7 +94,7 @@ if __name__ == "__main__":
                 config_7:[0] * num_iterations,
                 config_8:[0] * num_iterations
             },
-            "[0.92, 0.96, 0.99]":
+            normal:
             {
                 config_1:[0] * num_iterations,
                 config_2:[0] * num_iterations,
@@ -99,7 +105,7 @@ if __name__ == "__main__":
                 config_7:[0] * num_iterations,
                 config_8:[0] * num_iterations
             },
-            "[1, 1, 1]":
+            no_failure:
             {
                 config_1:[0] * num_iterations,
                 config_2:[0] * num_iterations,
@@ -119,7 +125,6 @@ if __name__ == "__main__":
     for iteration in range(1,num_iterations+1):   
         output_list.append('ITERATION ' + str(iteration) +  '\n')
         print("ITERATION ", iteration)
-        K.set_learning_phase(1)
         for hyperconnection_configuration in hyperconnection_configurations:
           
             # deepFogGuard
@@ -130,13 +135,11 @@ if __name__ == "__main__":
             else:
                 print("Training deepFogGuard")
                 dFGCheckPoint = ModelCheckpoint(deepFogGuard_file, monitor='val_acc', verbose=1, save_best_only=True, save_weights_only=True, mode='auto', period=1)
-                deepFogGuard.fit(training_data,training_labels,epochs=25, batch_size=batch_size,verbose=verbose,shuffle = True, callbacks = [dFGCheckPoint], validation_data=(val_data,val_labels))
+                deepFogGuard.fit(training_data,training_labels,epochs=num_train_epochs, batch_size=batch_size,verbose=verbose,shuffle = True, callbacks = [dFGCheckPoint], validation_data=(val_data,val_labels))
                 # load weights from epoch with the highest val acc
                 deepFogGuard.load_weights(deepFogGuard_file)
 
             # test models
-            K.set_learning_phase(0)
-
             for survivability_setting in survivability_settings:
                 # write results to a file 
                 # survival configurations

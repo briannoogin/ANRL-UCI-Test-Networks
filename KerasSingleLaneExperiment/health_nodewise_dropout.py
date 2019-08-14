@@ -28,8 +28,9 @@ if __name__ == "__main__":
         [.87,.91,.95],
         [.78,.8,.85],
     ]
-    # survibility configurations for deepFogGuardPlus baseline
-    ablation_survivalrate_configurations = [
+    # survival configurations for deepFogGuardPlus baseline
+    # elements of the vector are 1 - node-wise_dropout_rate
+    nodewise_survival_rates = [
         [.95,.95,.95],
         [.9,.9,.9],
         [.7,.7,.7],
@@ -51,33 +52,38 @@ if __name__ == "__main__":
     normal = str(survivability_settings[1])
     poor = str(survivability_settings[2])
     hazardous = str(survivability_settings[3])
-
+    
+    # convert dropout rates into strings
+    nodewise_dropout_rate_05 =  "[0.95, 0.95, 0.95]"
+    nodewise_dropout_rate_10 = "[0.9, 0.9, 0.9]"
+    nodewise_dropout_rate_30 = "[0.7, 0.7, 0.7]"
+    nodewise_dropout_rate_50 = "[0.5, 0.5, 0.5]"
     # dictionary to store all the results
     output = {
-        "deepFogGuard Plus Ablation": 
+        "deepFogGuardPlus Node-wise Dropout": 
         {
-             "[0.95, 0.95, 0.95]":
+            nodewise_dropout_rate_05:
             {
                 hazardous:[0] * num_iterations,
                 poor:[0] * num_iterations,
                 normal:[0] * num_iterations,
                 no_failure:[0] * num_iterations,
             },
-            "[0.9, 0.9, 0.9]":
+            nodewise_dropout_rate_10 :
             {
                 hazardous:[0] * num_iterations,
                 poor:[0] * num_iterations,
                 normal:[0] * num_iterations,
                 no_failure:[0] * num_iterations,
             },
-            "[0.7, 0.7, 0.7]":
+            nodewise_dropout_rate_30:
             {
                 hazardous:[0] * num_iterations,
                 poor:[0] * num_iterations,
                 normal:[0] * num_iterations,
                 no_failure:[0] * num_iterations,
             },
-            "[0.5, 0.5, 0.5]":
+            nodewise_dropout_rate_50:
             {
                 hazardous:[0] * num_iterations,
                 poor:[0] * num_iterations,
@@ -93,15 +99,15 @@ if __name__ == "__main__":
     for iteration in range(1,num_iterations+1):   
         output_list.append('ITERATION ' + str(iteration) +  '\n')
         print("ITERATION ", iteration)
-        output_list.append('deepFogGuard Plus Ablation' + '\n')                  
-        print("deepFogGuard Plus Ablation")
-        for nodewise_survival_rate in ablation_survivalrate_configurations:
+        output_list.append('deepFogGuardPlus Node-wise Dropout' + '\n')                  
+        print("deepFogGuardPlus Node-wise Dropout")
+        for nodewise_survival_rate in nodewise_survival_rates:
             deepFogGuardPlus_Ablation_file = str(iteration) + " " + str(nodewise_survival_rate) + '_new_split_deepFogGuardPlus_Ablation.h5'
             deepFogGuardPlus_ablation = define_deepFogGuardPlus(num_vars,num_classes,hidden_units,nodewise_survival_rate)
             if load_model:
                 deepFogGuardPlus_ablation.load_weights(deepFogGuardPlus_Ablation_file)
             else:
-                print("Training deepFogGuard Plus Ablation")
+                print("Training deepFogGuardPlus Node-wise Dropout")
                 print(str(nodewise_survival_rate))
                 deepFogGuardPlus_ablation_CheckPoint = ModelCheckpoint(deepFogGuardPlus_Ablation_file, monitor='val_acc', verbose=1, save_best_only=True, save_weights_only=True, mode='auto', period=1)
                 deepFogGuardPlus_ablation.fit(training_data,training_labels,epochs=num_train_epochs, batch_size=batch_size,verbose=verbose,shuffle = True, callbacks = [deepFogGuardPlus_ablation_CheckPoint],validation_data=(val_data,val_labels))
@@ -111,19 +117,19 @@ if __name__ == "__main__":
                 for survival_config in survivability_settings:
                     output_list.append(str(survival_config)+ '\n')
                     print(survival_config)
-                    output["deepFogGuard Plus Ablation"][str(nodewise_survival_rate)][str(survival_config)][iteration-1] = calculateExpectedAccuracy(deepFogGuardPlus_ablation,survival_config,output_list,training_labels,test_data,test_labels)
+                    output["deepFogGuardPlus Node-wise Dropout"][str(nodewise_survival_rate)][str(survival_config)][iteration-1] = calculateExpectedAccuracy(deepFogGuardPlus_ablation,survival_config,output_list,training_labels,test_data,test_labels)
             # clear session so that model will recycled back into memory
             K.clear_session()
             gc.collect()
             del deepFogGuardPlus_ablation
 
-    # calculate average accuracies for deepFogGuard Plus Ablation
-    for nodewise_survival_rate in ablation_survivalrate_configurations:
+    # calculate average accuracies for deepFogGuardPlus Node-wise Dropout
+    for nodewise_survival_rate in nodewise_survival_rates:
         print(nodewise_survival_rate)
-        for survive_config in survivability_settings:
-            deepFogGuardPlus_Ablation_acc = average(output["deepFogGuard Plus Ablation"][str(nodewise_survival_rate)][str(survive_config)])
-            output_list.append(str(nodewise_survival_rate) + str(survive_config) + " deepFogGuard Plus Ablation: " + str(deepFogGuardPlus_Ablation_acc) + '\n')
-            print(nodewise_survival_rate,survive_config,"deepFogGuard Plus Ablation:",deepFogGuardPlus_Ablation_acc)  
+        for survivability_setting in survivability_settings:
+            deepFogGuardPlus_Ablation_acc = average(output["deepFogGuardPlus Node-wise Dropout"][str(nodewise_survival_rate)][str(survivability_setting)])
+            output_list.append(str(nodewise_survival_rate) + str(survivability_setting) + " deepFogGuardPlus Node-wise Dropout: " + str(deepFogGuardPlus_Ablation_acc) + '\n')
+            print(nodewise_survival_rate,survivability_setting,"deepFogGuardPlus Node-wise Dropout:",deepFogGuardPlus_Ablation_acc)  
     # write experiments output to file
     with open(output_name,'w') as file:
         file.writelines(output_list)

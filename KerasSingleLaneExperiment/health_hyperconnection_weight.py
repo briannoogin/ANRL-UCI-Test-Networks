@@ -36,6 +36,7 @@ if __name__ == "__main__":
     output_name = "results/health_hyperconnection_weight.txt"
     num_iterations = 10
     verbose = 2
+    hyperconnection_weightedbysurvivability_config = 2
     # keep track of output so that output is in order
     output_list = []
     
@@ -65,7 +66,7 @@ if __name__ == "__main__":
 
         for survivability_setting in survivability_settings:
             # deepFogGuard weight ablation
-            deepFogGuard_weight_ablation = define_deepFogGuard(num_vars,num_classes,hidden_units,survivability_setting, weight_config = 2)
+            deepFogGuard_weight_ablation = define_deepFogGuard(num_vars,num_classes,hidden_units,survivability_setting, weight_config = hyperconnection_weightedbysurvivability_config)
             deepFogGuard_weight_ablation_file = str(iteration) + " " + str(survivability_setting) + '_new_split_deepFogGuard_weight_ablation_testsurvivalrate.h5'
             if load_model:
                 deepFogGuard_weight_ablation.load_weights(deepFogGuard_weight_ablation_file)
