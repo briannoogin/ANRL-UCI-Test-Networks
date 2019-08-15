@@ -62,9 +62,9 @@ if __name__ == "__main__":
         print("ITERATION ", iteration)
 
         for survivability_setting in survivability_settings:
-            # deepFogGuard hyperconnection_weight ablation
+            # deepFogGuard hyperconnection weight 
             deepFogGuard_hyperconnection_weight = define_deepFogGuard(num_vars,num_classes,hidden_units,survivability_setting, weight_config = hyperconnection_weightedbysurvivability_config)
-            deepFogGuard_hyperconnection_weight_file = str(iteration) + " " + str(survivability_setting) + '_new_split_deepFogGuard_weight_ablation_testsurvivalrate.h5'
+            deepFogGuard_hyperconnection_weight_file = str(iteration) + " " + str(survivability_setting) + 'health_hyperconnection_weight.h5'
             if load_model:
                 deepFogGuard_hyperconnection_weight.load_weights(deepFogGuard_hyperconnection_weight_file)
             else:

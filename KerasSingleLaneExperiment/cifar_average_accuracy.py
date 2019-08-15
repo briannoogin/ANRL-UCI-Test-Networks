@@ -46,7 +46,6 @@ if __name__ == "__main__":
     normal = str(survivability_settings[1])
     poor = str(survivability_settings[2])
     hazardous = str(survivability_settings[3])
-
     num_iterations = 10
     batch_size = 128
     epochs = 75

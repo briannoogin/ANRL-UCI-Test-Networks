@@ -102,7 +102,7 @@ if __name__ == "__main__":
         output_list.append('deepFogGuardPlus Node-wise Dropout' + '\n')                  
         print("deepFogGuardPlus Node-wise Dropout")
         for nodewise_survival_rate in nodewise_survival_rates:
-            deepFogGuardPlus_nodwise_dropout_file = str(iteration) + " " + str(nodewise_survival_rate) + '_new_split_deepFogGuardPlus_Ablation.h5'
+            deepFogGuardPlus_nodwise_dropout_file = str(iteration) + " " + str(nodewise_survival_rate) + 'health_nodewise_dropout.h5'
             deepFogGuardPlus_nodewise_dropout = define_deepFogGuardPlus(num_vars,num_classes,hidden_units,nodewise_survival_rate)
             if load_model:
                 deepFogGuardPlus_nodewise_dropout.load_weights(deepFogGuardPlus_nodwise_dropout_file)
@@ -127,9 +127,9 @@ if __name__ == "__main__":
     for nodewise_survival_rate in nodewise_survival_rates:
         print(nodewise_survival_rate)
         for survivability_setting in survivability_settings:
-            deepFogGuardPlus_Ablation_acc = average(output["deepFogGuardPlus Node-wise Dropout"][str(nodewise_survival_rate)][str(survivability_setting)])
-            output_list.append(str(nodewise_survival_rate) + str(survivability_setting) + " deepFogGuardPlus Node-wise Dropout: " + str(deepFogGuardPlus_Ablation_acc) + '\n')
-            print(nodewise_survival_rate,survivability_setting,"deepFogGuardPlus Node-wise Dropout:",deepFogGuardPlus_Ablation_acc)  
+            deepFogGuardPlus_nodewise_dropout_acc = average(output["deepFogGuardPlus Node-wise Dropout"][str(nodewise_survival_rate)][str(survivability_setting)])
+            output_list.append(str(nodewise_survival_rate) + str(survivability_setting) + " deepFogGuardPlus Node-wise Dropout: " + str(deepFogGuardPlus_nodewise_dropout_acc) + '\n')
+            print(nodewise_survival_rate,survivability_setting,"deepFogGuardPlus Node-wise Dropout:",deepFogGuardPlus_nodewise_dropout_acc)  
     # write experiments output to file
     with open(output_name,'w') as file:
         file.writelines(output_list)
