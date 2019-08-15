@@ -52,6 +52,13 @@ if __name__ == "__main__":
     epochs = 75
     progress_verbose = 2
     checkpoint_verbose = 1
+    use_GCP = True
+    dropout = 0
+    alpha = .5
+    input_shape = (32,32,3)
+    weights = None
+    classes = 10
+    default_nodewise_survival_rate = [.95,.95,.95]
     train_steps_per_epoch = math.ceil(len(x_train) / batch_size)
     val_steps_per_epoch = math.ceil(len(x_val) / batch_size)
     output = {
@@ -86,17 +93,17 @@ if __name__ == "__main__":
         os.mkdir('results/' + date)
     if not os.path.exists('models'):      
         os.mkdir('models/')
-    file_name = 'results/' + date + '/experiment3_fixedsplit_normalDeepFogGuardPlusExperiment_results.txt'
+    file_name = 'results/' + date + '/cifar_average_accuracy_results.txt'
     output_list = []
     for iteration in range(1,num_iterations+1):
         print("iteration:",iteration)
-        vanilla_name = "vanilla_cnn_fixedsplit_" + str(iteration) + ".h5"
-        deepFogGuard_name = "deepFogGuard_cnn_fixedsplit_" + str(iteration) + ".h5"
-        deepFogGuardPlus_name = "deepFogGuardPlus_cnn_fixedsplit" + str(iteration) + ".h5"
+        vanilla_name = "vanilla_cifar_average_accuracy" + str(iteration) + ".h5"
+        deepFogGuard_name = "deepFogGuard_cifar_average_accuracy" + str(iteration) + ".h5"
+        deepFogGuardPlus_name = "deepFogGuardPlus_cifar_average_accuracy" + str(iteration) + ".h5"
 
-        vanilla = define_Vanilla_CNN(weights = None,classes=10,input_shape = (32,32,3),nodewise_survival_rate = 0, alpha = .5)
-        deepFogGuard = define_deepFogGuard_CNN(weights = None,classes=10,input_shape = (32,32,3),nodewise_survival_rate = 0, alpha = .5)
-        deepFogGuardPlus = define_deepFogGuardPlus_CNN(weights = None,classes=10,input_shape = (32,32,3),nodewise_survival_rate = 0, alpha = .5,survive_rates=[.95,.95,.95])
+        vanilla = define_Vanilla_CNN(weights = weights,classes=classes,input_shape = input_shape,dropout = dropout, alpha = alpha)
+        deepFogGuard = define_deepFogGuard_CNN(weights = weights,classes=classes,input_shape = input_shape,dropout= dropout, alpha = alpha)
+        deepFogGuardPlus = define_deepFogGuardPlus_CNN(weights = weights,classes=classes,input_shape = input_shape,dropout = dropout, alpha = alpha,survive_rates=default_nodewise_survival_rate)
 
         # checkpoints to keep track of model with best validation accuracy 
         vanillaCheckPoint = ModelCheckpoint(vanilla_name, monitor='val_acc', verbose=checkpoint_verbose, save_best_only=True, save_weights_only=True, mode='auto', period=1)
@@ -134,12 +141,12 @@ if __name__ == "__main__":
         deepFogGuard.load_weights(deepFogGuard_name)
         deepFogGuardPlus.load_weights(deepFogGuardPlus_name)
 
-        for survive_config in survivability_settings:
-            output_list.append(str(survive_config) + '\n')
-            print(survive_config)
-            output["Vanilla"][str(survive_config)][iteration-1] = calculateExpectedAccuracy(vanilla, survive_config,output_list, y_train, x_test, y_test)
-            output["deepFogGuard"][str(survive_config)][iteration-1] = calculateExpectedAccuracy(deepFogGuard, survive_config,output_list, y_train, x_test, y_test)
-            output["deepFogGuard Plus"][str(survive_config)][iteration-1] = calculateExpectedAccuracy(deepFogGuardPlus, survive_config,output_list, y_train, x_test, y_test)
+        for survivability_setting in survivability_settings:
+            output_list.append(str(survivability_setting) + '\n')
+            print(survivability_setting)
+            output["Vanilla"][str(survivability_setting)][iteration-1] = calculateExpectedAccuracy(vanilla, survivability_setting,output_list, y_train, x_test, y_test)
+            output["deepFogGuard"][str(survivability_setting)][iteration-1] = calculateExpectedAccuracy(deepFogGuard, survivability_setting,output_list, y_train, x_test, y_test)
+            output["deepFogGuard Plus"][str(survivability_setting)][iteration-1] = calculateExpectedAccuracy(deepFogGuardPlus, survivability_setting,output_list, y_train, x_test, y_test)
         # clear session so that model will recycled back into memory
         K.clear_session()
         gc.collect()
@@ -147,24 +154,24 @@ if __name__ == "__main__":
         del deepFogGuard
         del deepFogGuardPlus
     with open(file_name,'a+') as file:
-        for survive_config in survivability_settings:
-            output_list.append(str(survive_config) + '\n')
+        for survivability_setting in survivability_settings:
+            output_list.append(str(survivability_setting) + '\n')
 
-            vanilla_acc = average(output["Vanilla"][str(survive_config)])
-            deepFogGuard_acc = average(output["deepFogGuard"][str(survive_config)])
-            deepFogGuardPlus_acc = average(output["deepFogGuard Plus"][str(survive_config)])
+            vanilla_acc = average(output["Vanilla"][str(survivability_setting)])
+            deepFogGuard_acc = average(output["deepFogGuard"][str(survivability_setting)])
+            deepFogGuardPlus_acc = average(output["deepFogGuard Plus"][str(survivability_setting)])
 
-            output_list.append(str(survive_config) + " Vanilla Accuracy: " + str(vanilla_acc) + '\n')
-            output_list.append(str(survive_config) + " deepFogGuard Accuracy: " + str(deepFogGuard_acc) + '\n')
-            output_list.append(str(survive_config) + " deepFogGuard Plus Accuracy: " + str(deepFogGuardPlus_acc) + '\n')
+            output_list.append(str(survivability_setting) + " Vanilla Accuracy: " + str(vanilla_acc) + '\n')
+            output_list.append(str(survivability_setting) + " deepFogGuard Accuracy: " + str(deepFogGuard_acc) + '\n')
+            output_list.append(str(survivability_setting) + " deepFogGuard Plus Accuracy: " + str(deepFogGuardPlus_acc) + '\n')
 
-            print(str(survive_config),"Vanilla Accuracy:",vanilla_acc)
-            print(str(survive_config),"deepFogGuard Accuracy:",deepFogGuard_acc)
-            print(str(survive_config),"deepFogGuard Plus Accuracy:",deepFogGuardPlus_acc)
+            print(str(survivability_setting),"Vanilla Accuracy:",vanilla_acc)
+            print(str(survivability_setting),"deepFogGuard Accuracy:",deepFogGuard_acc)
+            print(str(survivability_setting),"deepFogGuard Plus Accuracy:",deepFogGuardPlus_acc)
         file.writelines(output_list)
         file.flush()
         os.fsync(file)
-    use_GCP = True
+
     if use_GCP:
         os.system('gsutil -m -q cp -r *.h5 gs://anrl-storage/models')
         os.system('gsutil -m -q cp -r {} gs://anrl-storage/results/'.format(file_name))

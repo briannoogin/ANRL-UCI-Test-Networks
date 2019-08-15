@@ -16,7 +16,7 @@ from sklearn.model_selection import train_test_split
 
 
 # deepFogGuard hyperconnection failure configuration ablation experiment
-def hyperconnection_sensitivity_ablation():
+if __name__ == "__main__":
     # get cifar10 data 
     (x_train, y_train), (x_test, y_test) = cifar10.load_data()
 
@@ -46,16 +46,27 @@ def hyperconnection_sensitivity_ablation():
     poor = str(survivability_settings[1])
     hazardous = str(survivability_settings[2])
     num_iterations = 20
-    hyperconnections = [
+    skip_hyperconnection_configurations = [
         [0,0],
         [1,0],
         [0,1],
         [1,1],
     ]
+    # convert hyperconnection configuration into strings to be used as keys for dictionary
+    config_1 = str(skip_hyperconnection_configurations[0])
+    config_2 = str(skip_hyperconnection_configurations[1])
+    config_3 = str(skip_hyperconnection_configurations[2])
+    config_4 = str(skip_hyperconnection_configurations[3])
     batch_size = 128
     epochs = 75
     progress_verbose = 2
     checkpoint_verbose = 1
+    use_GCP = True
+    dropout = 0
+    alpha = .5
+    input_shape = (32,32,3)
+    weights = None
+    classes = 10
     train_steps_per_epoch = math.ceil(len(x_train) / batch_size)
     val_steps_per_epoch = math.ceil(len(x_val) / batch_size)
     output = {
@@ -63,40 +74,41 @@ def hyperconnection_sensitivity_ablation():
         {
             normal:      
             {  
-                "[0, 0]":[0] * num_iterations,
-                "[1, 0]":[0] * num_iterations,
-                "[0, 1]":[0] * num_iterations,
-                "[1, 1]":[0] * num_iterations,
+                config_1:[0] * num_iterations,
+                config_2:[0] * num_iterations,
+                config_3:[0] * num_iterations,
+                config_4:[0] * num_iterations,
             },
             poor:
             {
-                "[0, 0]":[0] * num_iterations,
-                "[1, 0]":[0] * num_iterations,
-                "[0, 1]":[0] * num_iterations,
-                "[1, 1]":[0] * num_iterations,
+                config_1:[0] * num_iterations,
+                config_2:[0] * num_iterations,
+                config_3:[0] * num_iterations,
+                config_4:[0] * num_iterations,
             },
             hazardous:
             {
-                "[0, 0]":[0] * num_iterations,
-                "[1, 0]":[0] * num_iterations,
-                "[0, 1]":[0] * num_iterations,
-                "[1, 1]":[0] * num_iterations,
+                config_1:[0] * num_iterations,
+                config_2:[0] * num_iterations,
+                config_3:[0] * num_iterations,
+                config_4:[0] * num_iterations,
             },
         },
     }
+    
     now = datetime.datetime.now()
     date = str(now.month) + '-' + str(now.day) + '-' + str(now.year)
     # make folder for outputs 
     if not os.path.exists('results/' + date):
         os.mkdir('results/')
         os.mkdir('results/' + date)
-    file_name = 'results/' + date + '/experiment3_hyperconnection_sensitivityablation_fixedsplit_results3.txt'
+    file_name = 'results/' + date + '/cifar_skiphyperconnection_sensitivity_results.txt'
     output_list = []
     for iteration in range(1,num_iterations+1):
         print("iteration:",iteration)
-        for hyperconnection in hyperconnections:
-            model_name = "GitHubANRL_deepFogGuardPlus_hyperconnectionsensitvityablation" + str(hyperconnection) + "_fixedsplit_" + str(iteration) + ".h5"
-            model = define_deepFogGuard_CNN(weights = None,classes=10,input_shape = (32,32,3),nodewise_survival_rate = 0, alpha = .5,hyperconnections = hyperconnection)
+        for skip_hyperconnection_configurations in skip_hyperconnection_configurations:
+            model_name = "cifar_skiphyperconnection_sensitivity_results_" + str(skip_hyperconnection_configurations) + str(iteration) + ".h5"
+            model = define_deepFogGuard_CNN(weights = weights,classes=classes,input_shape = input_shape,dropout=dropout, alpha = alpha,hyperconnections = skip_hyperconnection_configurations)
             modelCheckPoint = ModelCheckpoint(model_name, monitor='val_acc', verbose=checkpoint_verbose, save_best_only=True, save_weights_only=True, mode='auto', period=1)
             model.fit_generator(train_datagen.flow(x_train,y_train,batch_size = batch_size),
             epochs = epochs,
@@ -107,35 +119,27 @@ def hyperconnection_sensitivity_ablation():
             callbacks = [modelCheckPoint])
             # load weights with the highest validaton acc
             model.load_weights(model_name)
-            for survive_config in survivability_settings:
-                output_list.append(str(survive_config) + '\n')
-                print(survive_config)
-                output["DeepFogGuard Hyperconnection Sensitivity"][str(survive_config)][str(hyperconnection)][iteration-1] = calculateExpectedAccuracy(model, survive_config,output_list, y_train, x_test, y_test)
+            for survivability_settings in survivability_settings:
+                output_list.append(str(survivability_settings) + '\n')
+                print(survivability_settings)
+                output["DeepFogGuard Hyperconnection Sensitivity"][str(survivability_settings)][str(skip_hyperconnection_configurations)][iteration-1] = calculateExpectedAccuracy(model, survivability_settings,output_list, y_train, x_test, y_test)
             # clear session so that model will recycled back into memory
             K.clear_session()
             gc.collect()
             del model
     with open(file_name,'a+') as file:
-        for survive_config in survivability_settings:
-            for hyperconnection in hyperconnections:
-                output_list.append(str(survive_config) + '\n')
-                deepFogGuard_acc = average(output["DeepFogGuard Hyperconnection Sensitivity"][str(survive_config)][str(hyperconnection)])
-                acc_std = np.std(output["DeepFogGuard Hyperconnection Sensitivity"][str(survive_config)][str(hyperconnection)],ddof=1)
-                output_list.append(str(survive_config) + str(hyperconnection) + str(deepFogGuard_acc) + '\n')
-                output_list.append(str(survive_config) + str(hyperconnection) + str(acc_std) + '\n')
-                print(str(survive_config),deepFogGuard_acc)
-                print(str(survive_config), acc_std)
+        for survivability_settings in survivability_settings:
+            for skip_hyperconnection_configurations in skip_hyperconnection_configurations:
+                output_list.append(str(survivability_settings) + '\n')
+                deepFogGuard_acc = average(output["DeepFogGuard Hyperconnection Sensitivity"][str(survivability_settings)][str(skip_hyperconnection_configurations)])
+                acc_std = np.std(output["DeepFogGuard Hyperconnection Sensitivity"][str(survivability_settings)][str(skip_hyperconnection_configurations)],ddof=1)
+                output_list.append(str(survivability_settings) + str(skip_hyperconnection_configurations) + str(deepFogGuard_acc) + '\n')
+                output_list.append(str(survivability_settings) + str(skip_hyperconnection_configurations) + str(acc_std) + '\n')
+                print(str(survivability_settings),deepFogGuard_acc)
+                print(str(survivability_settings), acc_std)
         file.writelines(output_list)
         file.flush()
         os.fsync(file)
-    use_GCP = True
     if use_GCP:
         os.system('gsutil -m -q cp -r *.h5 gs://anrl-storage/models')
         os.system('gsutil -m -q cp -r {} gs://anrl-storage/results/'.format(file_name))
-
-# cnn experiment 
-if __name__ == "__main__":
-    #cnn_normal_experiments()
-    #nodewise_survival_rate_ablation()
-    #hyperconnection_weight_ablation()
-    hyperconnection_sensitivity_ablation()

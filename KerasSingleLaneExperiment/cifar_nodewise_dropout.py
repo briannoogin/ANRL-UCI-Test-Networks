@@ -64,10 +64,16 @@ if __name__ == "__main__":
     epochs = 75
     progress_verbose = 2
     checkpoint_verbose = 1
+    use_GCP = True
+    dropout = 0
+    alpha = .5
+    input_shape = (32,32,3)
+    weights = None
+    classes = 10
     train_steps_per_epoch = math.ceil(len(x_train) / batch_size)
     val_steps_per_epoch = math.ceil(len(x_val) / batch_size)
     output = {
-        "DeepFogGuard Plus Baseline":
+        "deepFogGuardPlus Node-wise Dropout":
         {
             nodewise_nodewise_survival_rate_rate_10:
             {
@@ -106,12 +112,12 @@ if __name__ == "__main__":
     if not os.path.exists('results/' + date):
         os.mkdir('results/')
         os.mkdir('results/' + date)
-    file_name = 'results/' + date + '/experiment3_nodewise_survival_rateAblation_fixedsplit_results.txt'
+    file_name = 'results/' + date + '/cifar_nodewise_dropout_results.txt'
     for iteration in range(1,num_iterations+1):
         print("iteration:",iteration)
         for nodewise_survival_rate in nodewise_survival_rates:
-            model_name = "GitHubANRL_deepFogGuardPlus_nodewise_survival_rateAblation" + str(nodewise_survival_rate) + "_" + str(iteration) + ".h5"
-            model = define_deepFogGuardPlus_CNN(weights = None,classes=10,input_shape = (32,32,3),nodewise_survival_rate = 0, alpha = .5,survive_rates=nodewise_survival_rate)
+            model_name = "cifar_nodewise_dropout_" + str(nodewise_survival_rate) + "_" + str(iteration) + ".h5"
+            model = define_deepFogGuardPlus_CNN(weights = weights,classes=classes,input_shape = input_shape,dropout = dropout, alpha = alpha,survive_rates=nodewise_survival_rate)
             modelCheckPoint = ModelCheckpoint(model_name, monitor='val_acc', verbose=checkpoint_verbose, save_best_only=True, save_weights_only=True, mode='auto', period=1)
             model.fit_generator(train_datagen.flow(x_train,y_train,batch_size = batch_size),
             epochs = epochs,
@@ -122,25 +128,24 @@ if __name__ == "__main__":
             callbacks = [modelCheckPoint])
             # load weights with the highest validaton acc
             model.load_weights(model_name)
-            for survive_config in survivability_settings:
-                output_list.append(str(survive_config) + '\n')
-                print(survive_config)
-                output["DeepFogGuard Plus Baseline"][str(nodewise_survival_rate)][str(survive_config)][iteration-1] = calculateExpectedAccuracy(model, survive_config,output_list, y_train, x_test, y_test)
+            for survivability_setting in survivability_settings:
+                output_list.append(str(survivability_setting) + '\n')
+                print(survivability_setting)
+                output["deepFogGuardPlus Node-wise Dropout"][str(nodewise_survival_rate)][str(survivability_setting)][iteration-1] = calculateExpectedAccuracy(model, survivability_setting,output_list, y_train, x_test, y_test)
             # clear session so that model will recycled back into memory
             K.clear_session()
             gc.collect()
             del model
     with open(file_name,'a+') as file:
-        for survive_config in survivability_settings:
+        for survivability_setting in survivability_settings:
             for nodewise_survival_rate in nodewise_survival_rates:
-                output_list.append(str(survive_config) + '\n')
-                deepGuardPlus_acc = average(output["DeepFogGuard Plus Baseline"][str(nodewise_survival_rate)][str(survive_config)])
-                output_list.append(str(survive_config) + str(nodewise_survival_rate) + " nodewise_survival_rate Accuracy: " + str(deepGuardPlus_acc) + '\n')
-                print(str(survive_config), str(nodewise_survival_rate), " nodewise_survival_rate Accuracy:",deepGuardPlus_acc)
+                output_list.append(str(survivability_setting) + '\n')
+                deepGuardPlus_acc = average(output["deepFogGuardPlus Node-wise Dropout"][str(nodewise_survival_rate)][str(survivability_setting)])
+                output_list.append(str(survivability_setting) + str(nodewise_survival_rate) + " nodewise_survival_rate Accuracy: " + str(deepGuardPlus_acc) + '\n')
+                print(str(survivability_setting), str(nodewise_survival_rate), " nodewise_survival_rate Accuracy:",deepGuardPlus_acc)
         file.writelines(output_list)
         file.flush()
         os.fsync(file)
-    use_GCP = True
     if use_GCP:
         os.system('gsutil -m -q cp -r *.h5 gs://anrl-storage/models')
         os.system('gsutil -m -q cp -r {} gs://anrl-storage/results/'.format(file_name))

@@ -52,15 +52,21 @@ if __name__ == "__main__":
     epochs = 75
     progress_verbose = 2
     checkpoint_verbose = 1
+    use_GCP = True
+    dropout = 0
+    alpha = .5
+    input_shape = (32,32,3)
+    weights = None
+    classes = 10
     train_steps_per_epoch = math.ceil(len(x_train) / batch_size)
     val_steps_per_epoch = math.ceil(len(x_val) / batch_size)
     output = {
-        "DeepFogGuard Baseline":
+        "DeepFogGuard Hyperconnection Weight":
         {
             no_failure: [0] * num_iterations,
-            "[0.9, 0.95]":[0] * num_iterations,
-            "[0.8, 0.85]":[0] * num_iterations,
-            "[1, 1]":[0] * num_iterations,
+            normal:[0] * num_iterations,
+            poor:[0] * num_iterations,
+            hazardous:[0] * num_iterations,
         },
     }
     now = datetime.datetime.now()
@@ -69,13 +75,13 @@ if __name__ == "__main__":
     if not os.path.exists('results/' + date):
         os.mkdir('results/')
         os.mkdir('results/' + date)
-    file_name = 'results/' + date + '/experiment3_hyperconnection_weight_ablation_weightedbys(i)_fixedsplit_results.txt'
+    file_name = 'results/' + date + '/cifar_hyperconnection_weight_results.txt'
     output_list = []
     for iteration in range(1,num_iterations+1):
         print("iteration:",iteration)
-        for survive_config in survivability_settings:
-            model_name = "GitHubANRL_deepFogGuard_hyperconnectionweightablation_weightedbys(i)_" + str(survive_config) + "_fixedsplit_" + str(iteration) + ".h5"
-            model = define_deepFogGuard_CNN(weights = None,classes=10,input_shape = (32,32,3),nodewise_survival_rate = 0, alpha = .5,hyperconnection_weights=survive_config, hyperconnection_weights_scheme = 2)
+        for survivability_setting in survivability_settings:
+            model_name = "cifar_hyperconnection_weight_results_" + str(survivability_setting) + str(iteration) + ".h5"
+            model = define_deepFogGuard_CNN(weights = weights,classes=classes,input_shape = input_shape,dropout=dropout, alpha = alpha,hyperconnection_weights=survivability_setting, hyperconnection_weights_scheme = 2)
             modelCheckPoint = ModelCheckpoint(model_name, monitor='val_acc', verbose=checkpoint_verbose, save_best_only=True, save_weights_only=True, mode='auto', period=1)
             model.fit_generator(train_datagen.flow(x_train,y_train,batch_size = batch_size),
             epochs = epochs,
@@ -86,23 +92,22 @@ if __name__ == "__main__":
             callbacks = [modelCheckPoint])
             # load weights with the highest validaton acc
             model.load_weights(model_name)
-            output_list.append(str(survive_config) + '\n')
-            print(survive_config)
-            output["DeepFogGuard Baseline"][str(survive_config)][iteration-1] = calculateExpectedAccuracy(model, survive_config,output_list, y_train, x_test, y_test)
+            output_list.append(str(survivability_setting) + '\n')
+            print(survivability_setting)
+            output["DeepFogGuard Hyperconnection Weight"][str(survivability_setting)][iteration-1] = calculateExpectedAccuracy(model, survivability_setting,output_list, y_train, x_test, y_test)
             # clear session so that model will recycled back into memory
             K.clear_session()
             gc.collect()
             del model
     with open(file_name,'a+') as file:
-        for survive_config in survivability_settings:
-            output_list.append(str(survive_config) + '\n')
-            deepFogGuard_acc = average(output["DeepFogGuard Baseline"][str(survive_config)])
-            output_list.append(str(survive_config) + str(deepFogGuard_acc) + '\n')
-            print(str(survive_config),deepFogGuard_acc)
+        for survivability_setting in survivability_settings:
+            output_list.append(str(survivability_setting) + '\n')
+            deepFogGuard_acc = average(output["DeepFogGuard Hyperconnection Weight"][str(survivability_setting)])
+            output_list.append(str(survivability_setting) + str(deepFogGuard_acc) + '\n')
+            print(str(survivability_setting),deepFogGuard_acc)
         file.writelines(output_list)
         file.flush()
         os.fsync(file)
-    use_GCP = True
     if use_GCP:
         os.system('gsutil -m -q cp -r *.h5 gs://anrl-storage/models')
         os.system('gsutil -m -q cp -r {} gs://anrl-storage/results/'.format(file_name))
