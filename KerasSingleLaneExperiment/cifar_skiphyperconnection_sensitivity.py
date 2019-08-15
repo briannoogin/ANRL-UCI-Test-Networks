@@ -106,9 +106,9 @@ if __name__ == "__main__":
     output_list = []
     for iteration in range(1,num_iterations+1):
         print("iteration:",iteration)
-        for skip_hyperconnection_configurations in skip_hyperconnection_configurations:
-            model_name = "cifar_skiphyperconnection_sensitivity_results_" + str(skip_hyperconnection_configurations) + str(iteration) + ".h5"
-            model = define_deepFogGuard_CNN(weights = weights,classes=classes,input_shape = input_shape,dropout=dropout, alpha = alpha,hyperconnections = skip_hyperconnection_configurations)
+        for skip_hyperconnection_configuration in skip_hyperconnection_configurations:
+            model_name = "cifar_skiphyperconnection_sensitivity_results_" + str(skip_hyperconnection_configuration) + str(iteration) + ".h5"
+            model = define_deepFogGuard_CNN(weights = weights,classes=classes,input_shape = input_shape,dropout=dropout, alpha = alpha,hyperconnections = skip_hyperconnection_configuration)
             modelCheckPoint = ModelCheckpoint(model_name, monitor='val_acc', verbose=checkpoint_verbose, save_best_only=True, save_weights_only=True, mode='auto', period=1)
             model.fit_generator(train_datagen.flow(x_train,y_train,batch_size = batch_size),
             epochs = epochs,
@@ -122,19 +122,19 @@ if __name__ == "__main__":
             for survivability_settings in survivability_settings:
                 output_list.append(str(survivability_settings) + '\n')
                 print(survivability_settings)
-                output["DeepFogGuard Hyperconnection Sensitivity"][str(survivability_settings)][str(skip_hyperconnection_configurations)][iteration-1] = calculateExpectedAccuracy(model, survivability_settings,output_list, y_train, x_test, y_test)
+                output["DeepFogGuard Hyperconnection Sensitivity"][str(survivability_settings)][str(skip_hyperconnection_configuration)][iteration-1] = calculateExpectedAccuracy(model, survivability_settings,output_list, y_train, x_test, y_test)
             # clear session so that model will recycled back into memory
             K.clear_session()
             gc.collect()
             del model
     with open(file_name,'a+') as file:
         for survivability_settings in survivability_settings:
-            for skip_hyperconnection_configurations in skip_hyperconnection_configurations:
+            for skip_hyperconnection_configuration in skip_hyperconnection_configurations:
                 output_list.append(str(survivability_settings) + '\n')
-                deepFogGuard_acc = average(output["DeepFogGuard Hyperconnection Sensitivity"][str(survivability_settings)][str(skip_hyperconnection_configurations)])
-                acc_std = np.std(output["DeepFogGuard Hyperconnection Sensitivity"][str(survivability_settings)][str(skip_hyperconnection_configurations)],ddof=1)
-                output_list.append(str(survivability_settings) + str(skip_hyperconnection_configurations) + str(deepFogGuard_acc) + '\n')
-                output_list.append(str(survivability_settings) + str(skip_hyperconnection_configurations) + str(acc_std) + '\n')
+                deepFogGuard_acc = average(output["DeepFogGuard Hyperconnection Sensitivity"][str(survivability_settings)][str(skip_hyperconnection_configuration)])
+                acc_std = np.std(output["DeepFogGuard Hyperconnection Sensitivity"][str(survivability_settings)][str(skip_hyperconnection_configuration)],ddof=1)
+                output_list.append(str(survivability_settings) + str(skip_hyperconnection_configuration) + str(deepFogGuard_acc) + '\n')
+                output_list.append(str(survivability_settings) + str(skip_hyperconnection_configuration) + str(acc_std) + '\n')
                 print(str(survivability_settings),deepFogGuard_acc)
                 print(str(survivability_settings), acc_std)
         file.writelines(output_list)

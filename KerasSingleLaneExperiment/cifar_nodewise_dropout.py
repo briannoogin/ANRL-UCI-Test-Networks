@@ -53,10 +53,10 @@ if __name__ == "__main__":
     hazardous = str(survivability_settings[3])
 
     # convert nodewise_survival_rate rates into strings
-    nodewise_nodewise_survival_rate_rate_05 =  str(nodewise_survival_rates[0])
-    nodewise_nodewise_survival_rate_rate_10 = str(nodewise_survival_rates[1])
-    nodewise_nodewise_survival_rate_rate_30 = str(nodewise_survival_rates[2])
-    nodewise_nodewise_survival_rate_rate_50 = str(nodewise_survival_rates[3])
+    nodewise_nodewise_dropout_rate_05 =  str(nodewise_survival_rates[0])
+    nodewise_nodewise_dropout_rate_10 = str(nodewise_survival_rates[1])
+    nodewise_nodewise_dropout_rate_30 = str(nodewise_survival_rates[2])
+    nodewise_nodewise_dropout_rate_50 = str(nodewise_survival_rates[3])
     
     num_iterations = 10
     output_list = []
@@ -75,32 +75,32 @@ if __name__ == "__main__":
     output = {
         "deepFogGuardPlus Node-wise Dropout":
         {
-            nodewise_nodewise_survival_rate_rate_10:
+            nodewise_nodewise_dropout_rate_10:
             {
-                normal: [0] * num_iterations,
-                poor:[0] * num_iterations,
                 hazardous:[0] * num_iterations,
+                poor:[0] * num_iterations,
+                normal: [0] * num_iterations,
                 no_failure:[0] * num_iterations,
             },
-            nodewise_nodewise_survival_rate_rate_30:
+            nodewise_nodewise_dropout_rate_30:
             {
-                normal: [0] * num_iterations,
-                poor:[0] * num_iterations,
                 hazardous:[0] * num_iterations,
+                poor:[0] * num_iterations,
+                normal: [0] * num_iterations,
                 no_failure:[0] * num_iterations,
             },
-            nodewise_nodewise_survival_rate_rate_50:
+            nodewise_nodewise_dropout_rate_50:
             {
-                normal: [0] * num_iterations,
-                poor:[0] * num_iterations,
                 hazardous:[0] * num_iterations,
+                poor:[0] * num_iterations,
+                normal: [0] * num_iterations,
                 no_failure:[0] * num_iterations,
             },
-            nodewise_nodewise_survival_rate_rate_05:
+            nodewise_nodewise_dropout_rate_05:
             {
-                normal: [0] * num_iterations,
-                poor:[0] * num_iterations,
                 hazardous:[0] * num_iterations,
+                poor:[0] * num_iterations,
+                normal: [0] * num_iterations,
                 no_failure:[0] * num_iterations,
             },
         }

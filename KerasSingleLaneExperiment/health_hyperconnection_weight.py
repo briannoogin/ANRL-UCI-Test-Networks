@@ -23,6 +23,7 @@ if __name__ == "__main__":
     num_vars = len(training_data[0])
     num_classes = 13
     survivability_settings = [
+        [1,1,1],
         [.92,.96,.99],
         [.87,.91,.95],
         [.78,.8,.85],
@@ -40,14 +41,16 @@ if __name__ == "__main__":
     output_list = []
     
     # convert survivability settings into strings so it can be used in the dictionary as keys
-    normal = str(survivability_settings[0])
-    poor = str(survivability_settings[1])
-    hazardous = str(survivability_settings[2])
+    no_failure = str(survivability_settings[0])
+    normal = str(survivability_settings[1])
+    poor = str(survivability_settings[2])
+    hazardous = str(survivability_settings[3])
 
     # dictionary to store all the results
     output = {
         "DeepFogGuard Hyperconnection Weight": 
         {
+            no_failure: [0] * num_iterations,
             hazardous:[0] * num_iterations,
             poor:[0] * num_iterations,
             normal:[0] * num_iterations,
