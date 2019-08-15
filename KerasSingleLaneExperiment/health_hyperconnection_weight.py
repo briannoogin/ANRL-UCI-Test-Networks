@@ -28,6 +28,15 @@ if __name__ == "__main__":
         [.87,.91,.95],
         [.78,.8,.85],
     ]
+    # define weight schemes
+    one_weight_scheme = 1
+    normalized_survivability_weight_scheme = 2
+    survivability_weight_scheme = 3
+    weight_schemes = [
+        one_weight_scheme,
+        normalized_survivability_weight_scheme,
+        survivability_weight_scheme
+    ]
     hidden_units = 250
     batch_size = 1028
     load_model = False
@@ -50,10 +59,27 @@ if __name__ == "__main__":
     output = {
         "DeepFogGuard Hyperconnection Weight": 
         {
-            no_failure: [0] * num_iterations,
-            hazardous:[0] * num_iterations,
-            poor:[0] * num_iterations,
-            normal:[0] * num_iterations,
+            weight_schemes[0]:
+            {
+                no_failure: [0] * num_iterations,
+                hazardous:[0] * num_iterations,
+                poor:[0] * num_iterations,
+                normal:[0] * num_iterations,
+            },
+            weight_schemes[1]:
+            {
+                no_failure: [0] * num_iterations,
+                hazardous:[0] * num_iterations,
+                poor:[0] * num_iterations,
+                normal:[0] * num_iterations,
+            },
+            weight_schemes[2]:
+            {
+                no_failure: [0] * num_iterations,
+                hazardous:[0] * num_iterations,
+                poor:[0] * num_iterations,
+                normal:[0] * num_iterations,
+            }
         },
     }
 
@@ -63,29 +89,31 @@ if __name__ == "__main__":
     for iteration in range(1,num_iterations+1):   
         output_list.append('ITERATION ' + str(iteration) +  '\n')
         print("ITERATION ", iteration)
-
         for survivability_setting in survivability_settings:
-            # deepFogGuard hyperconnection weight 
-            deepFogGuard_hyperconnection_weight = define_deepFogGuard(num_vars,num_classes,hidden_units,survivability_setting, weight_config = hyperconnection_weightedbysurvivability_config)
-            deepFogGuard_hyperconnection_weight_file = str(iteration) + " " + str(survivability_setting) + 'health_hyperconnection_weight.h5'
-            if load_model:
-                deepFogGuard_hyperconnection_weight.load_weights(deepFogGuard_hyperconnection_weight_file)
-            else:
-                print("DeepFogGuard Hyperconnection Weight")
-                deepFogGuard_hyperconnection_weight_CheckPoint = ModelCheckpoint(deepFogGuard_hyperconnection_weight_file, monitor='val_acc', verbose=1, save_best_only=True, save_weights_only=True, mode='auto', period=1)
-                deepFogGuard_hyperconnection_weight.fit(training_data,training_labels,epochs=num_train_epochs, batch_size=batch_size,verbose=verbose,shuffle = True, callbacks = [deepFogGuard_hyperconnection_weight_CheckPoint],validation_data=(val_data,val_labels))
-                # load weights from epoch with the highest val acc
-                deepFogGuard_hyperconnection_weight.load_weights(deepFogGuard_hyperconnection_weight_file)
+            # loop through all the weight schemes
+            for weight_scheme in weight_schemes:
+                # deepFogGuard hyperconnection weight 
+                deepFogGuard_hyperconnection_weight = define_deepFogGuard(num_vars,num_classes,hidden_units,survivability_setting, weight_config = weight_scheme)
+                deepFogGuard_hyperconnection_weight_file = str(iteration) + "_" + str(survivability_setting) + "_" + str(weight_scheme) + '_health_hyperconnection_weight.h5'
+                if load_model:
+                    deepFogGuard_hyperconnection_weight.load_weights(deepFogGuard_hyperconnection_weight_file)
+                else:
+                    print("DeepFogGuard Hyperconnection Weight")
+                    deepFogGuard_hyperconnection_weight_CheckPoint = ModelCheckpoint(deepFogGuard_hyperconnection_weight_file, monitor='val_acc', verbose=1, save_best_only=True, save_weights_only=True, mode='auto', period=1)
+                    deepFogGuard_hyperconnection_weight.fit(training_data,training_labels,epochs=num_train_epochs, batch_size=batch_size,verbose=verbose,shuffle = True, callbacks = [deepFogGuard_hyperconnection_weight_CheckPoint],validation_data=(val_data,val_labels))
+                    # load weights from epoch with the highest val acc
+                    deepFogGuard_hyperconnection_weight.load_weights(deepFogGuard_hyperconnection_weight_file)
 
-        # clear session so that model will recycled back into memory
-        K.clear_session()
-        gc.collect()
-        del deepFogGuard_hyperconnection_weight
+                # clear session so that model will recycled back into memory
+                K.clear_session()
+                gc.collect()
+                del deepFogGuard_hyperconnection_weight
    # calculate average accuracies 
     for survivability_setting in survivability_settings:
-        deepFogGuard_hyperconnection_weight_acc = average(output["DeepFogGuard Hyperconnection Weight"][str(survivability_setting)])
-        output_list.append(str(survivability_setting) + " DeepFogGuard Hyperconnection Weight: " + str(deepFogGuard_hyperconnection_weight_acc) + '\n')
-        print(str(survivability_setting),"DeepFogGuard Hyperconnection Weight:",deepFogGuard_hyperconnection_weight_acc)
+        for weight_scheme in weight_schemes:
+            deepFogGuard_hyperconnection_weight_acc = average(output["DeepFogGuard Hyperconnection Weight"][weight_scheme][str(survivability_setting)])
+            output_list.append(str(survivability_setting) + str(weight_scheme) + " DeepFogGuard Hyperconnection Weight: " + str(deepFogGuard_hyperconnection_weight_acc) + '\n')
+            print(str(survivability_setting),weight_scheme,"DeepFogGuard Hyperconnection Weight:",deepFogGuard_hyperconnection_weight_acc)
     # write experiments output to file
     with open(output_name,'w') as file:
         file.writelines(output_list)

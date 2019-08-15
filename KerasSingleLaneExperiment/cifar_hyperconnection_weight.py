@@ -42,6 +42,15 @@ if __name__ == "__main__":
         [.90,.95],
         [.80,.85],
     ]
+    # define weight schemes
+    one_weight_scheme = 1
+    normalized_survivability_weight_scheme = 2
+    survivability_weight_scheme = 3
+    weight_schemes = [
+        one_weight_scheme,
+        normalized_survivability_weight_scheme,
+        survivability_weight_scheme
+    ]
     # convert survivability settings into strings so it can be used in the dictionary as keys
     no_failure = str(survivability_settings[0])
     normal = str(survivability_settings[1])
@@ -61,50 +70,70 @@ if __name__ == "__main__":
     train_steps_per_epoch = math.ceil(len(x_train) / batch_size)
     val_steps_per_epoch = math.ceil(len(x_val) / batch_size)
     output = {
-        "DeepFogGuard Hyperconnection Weight":
+        "DeepFogGuard Hyperconnection Weight": 
         {
-            no_failure: [0] * num_iterations,
-            normal:[0] * num_iterations,
-            poor:[0] * num_iterations,
-            hazardous:[0] * num_iterations,
+            weight_schemes[0]:
+            {
+                no_failure: [0] * num_iterations,
+                hazardous:[0] * num_iterations,
+                poor:[0] * num_iterations,
+                normal:[0] * num_iterations,
+            },
+            weight_schemes[1]:
+            {
+                no_failure: [0] * num_iterations,
+                hazardous:[0] * num_iterations,
+                poor:[0] * num_iterations,
+                normal:[0] * num_iterations,
+            },
+            weight_schemes[2]:
+            {
+                no_failure: [0] * num_iterations,
+                hazardous:[0] * num_iterations,
+                poor:[0] * num_iterations,
+                normal:[0] * num_iterations,
+            }
         },
     }
     now = datetime.datetime.now()
     date = str(now.month) + '-' + str(now.day) + '-' + str(now.year)
     # make folder for outputs 
-    if not os.path.exists('results/' + date):
+    if not os.path.exists('results/'):
         os.mkdir('results/')
+    if not os.path.exists('results/' + date):
         os.mkdir('results/' + date)
     file_name = 'results/' + date + '/cifar_hyperconnection_weight_results.txt'
     output_list = []
     for iteration in range(1,num_iterations+1):
         print("iteration:",iteration)
         for survivability_setting in survivability_settings:
-            model_name = "cifar_hyperconnection_weight_results_" + str(survivability_setting) + str(iteration) + ".h5"
-            model = define_deepFogGuard_CNN(weights = weights,classes=classes,input_shape = input_shape,dropout=dropout, alpha = alpha,hyperconnection_weights=survivability_setting, hyperconnection_weights_scheme = 2)
-            modelCheckPoint = ModelCheckpoint(model_name, monitor='val_acc', verbose=checkpoint_verbose, save_best_only=True, save_weights_only=True, mode='auto', period=1)
-            model.fit_generator(train_datagen.flow(x_train,y_train,batch_size = batch_size),
-            epochs = epochs,
-            validation_data = (x_val,y_val), 
-            steps_per_epoch = train_steps_per_epoch, 
-            verbose = progress_verbose, 
-            validation_steps = val_steps_per_epoch,
-            callbacks = [modelCheckPoint])
-            # load weights with the highest validaton acc
-            model.load_weights(model_name)
-            output_list.append(str(survivability_setting) + '\n')
-            print(survivability_setting)
-            output["DeepFogGuard Hyperconnection Weight"][str(survivability_setting)][iteration-1] = calculateExpectedAccuracy(model, survivability_setting,output_list, y_train, x_test, y_test)
-            # clear session so that model will recycled back into memory
-            K.clear_session()
-            gc.collect()
-            del model
+            for weight_scheme in weight_schemes:
+                model_name = "cifar_hyperconnection_weight_results_" + str(survivability_setting) + str(weight_scheme) + str(iteration) + ".h5"
+                model = define_deepFogGuard_CNN(weights = weights,classes=classes,input_shape = input_shape,dropout=dropout, alpha = alpha,hyperconnection_weights=survivability_setting, hyperconnection_weights_scheme = weight_scheme)
+                modelCheckPoint = ModelCheckpoint(model_name, monitor='val_acc', verbose=checkpoint_verbose, save_best_only=True, save_weights_only=True, mode='auto', period=1)
+                model.fit_generator(train_datagen.flow(x_train,y_train,batch_size = batch_size),
+                epochs = epochs,
+                validation_data = (x_val,y_val), 
+                steps_per_epoch = train_steps_per_epoch, 
+                verbose = progress_verbose, 
+                validation_steps = val_steps_per_epoch,
+                callbacks = [modelCheckPoint])
+                #load weights with the highest validaton acc
+                model.load_weights(model_name)
+                output_list.append(str(survivability_setting) + str(weight_scheme) + '\n')
+                print(survivability_setting,weight_scheme)
+                output["DeepFogGuard Hyperconnection Weight"][weight_scheme][str(survivability_setting)][iteration-1] = calculateExpectedAccuracy(model, survivability_setting,output_list, y_train, x_test, y_test)
+                # clear session so that model will recycled back into memory
+                K.clear_session()
+                gc.collect()
+                del model
     with open(file_name,'a+') as file:
         for survivability_setting in survivability_settings:
-            output_list.append(str(survivability_setting) + '\n')
-            deepFogGuard_acc = average(output["DeepFogGuard Hyperconnection Weight"][str(survivability_setting)])
-            output_list.append(str(survivability_setting) + str(deepFogGuard_acc) + '\n')
-            print(str(survivability_setting),deepFogGuard_acc)
+            for weight_scheme in weight_schemes:
+                output_list.append(str(survivability_setting) + str(weight_scheme) + '\n')
+                deepFogGuard_acc = average(output["DeepFogGuard Hyperconnection Weight"][weight_scheme][str(survivability_setting)])
+                output_list.append(str(survivability_setting) + str(weight_scheme) +  str(deepFogGuard_acc) + '\n')
+                print(str(survivability_setting), weight_scheme, deepFogGuard_acc)
         file.writelines(output_list)
         file.flush()
         os.fsync(file)
