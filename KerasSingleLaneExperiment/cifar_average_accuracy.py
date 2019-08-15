@@ -6,7 +6,9 @@ from keras.callbacks import ModelCheckpoint
 import keras.backend as K
 import math
 import os 
-from KerasSingleLaneExperiment.cnn import define_Vanilla_CNN, define_deepFogGuard_CNN, define_deepFogGuardPlus_CNN
+from KerasSingleLaneExperiment.cnn_Vanilla import define_Vanilla_CNN
+from KerasSingleLaneExperiment.cnn_deepFogGuard import define_deepFogGuard_CNN
+from KerasSingleLaneExperiment.cnn_deepFogGuardPlus import define_deepFogGuardPlus_CNN
 from KerasSingleLaneExperiment.FailureIteration import calculateExpectedAccuracy
 import numpy as np
 from KerasSingleLaneExperiment.main import average

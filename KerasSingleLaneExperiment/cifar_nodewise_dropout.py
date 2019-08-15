@@ -6,7 +6,7 @@ from keras.callbacks import ModelCheckpoint
 import keras.backend as K
 import math
 import os 
-from KerasSingleLaneExperiment.cnn import define_Vanilla_CNN, define_deepFogGuard_CNN, define_deepFogGuardPlus_CNN
+from KerasSingleLaneExperiment.cnn_deepFogGuardPlus import define_deepFogGuardPlus_CNN, define_adjusted_deepFogGuardPlus_CNN
 from KerasSingleLaneExperiment.FailureIteration import calculateExpectedAccuracy
 import numpy as np
 from KerasSingleLaneExperiment.main import average
@@ -103,46 +103,101 @@ if __name__ == "__main__":
                 normal: [0] * num_iterations,
                 no_failure:[0] * num_iterations,
             },
+        },
+        "deepFogGuardPlus Adjusted Node-wise Dropout":
+        {
+            nodewise_nodewise_dropout_rate_10:
+            {
+                hazardous:[0] * num_iterations,
+                poor:[0] * num_iterations,
+                normal: [0] * num_iterations,
+                no_failure:[0] * num_iterations,
+            },
+            nodewise_nodewise_dropout_rate_30:
+            {
+                hazardous:[0] * num_iterations,
+                poor:[0] * num_iterations,
+                normal: [0] * num_iterations,
+                no_failure:[0] * num_iterations,
+            },
+            nodewise_nodewise_dropout_rate_50:
+            {
+                hazardous:[0] * num_iterations,
+                poor:[0] * num_iterations,
+                normal: [0] * num_iterations,
+                no_failure:[0] * num_iterations,
+            },
+            nodewise_nodewise_dropout_rate_05:
+            {
+                hazardous:[0] * num_iterations,
+                poor:[0] * num_iterations,
+                normal: [0] * num_iterations,
+                no_failure:[0] * num_iterations,
+            },
         }
     }
   
     now = datetime.datetime.now()
     date = str(now.month) + '-' + str(now.day) + '-' + str(now.year)
     # make folder for outputs 
-    if not os.path.exists('results/' + date):
+    if not os.path.exists('results/'):
         os.mkdir('results/')
+    if not os.path.exists('results/' + date):
         os.mkdir('results/' + date)
     file_name = 'results/' + date + '/cifar_nodewise_dropout_results.txt'
     for iteration in range(1,num_iterations+1):
         print("iteration:",iteration)
         for nodewise_survival_rate in nodewise_survival_rates:
-            model_name = "cifar_nodewise_dropout_" + str(nodewise_survival_rate) + "_" + str(iteration) + ".h5"
-            model = define_deepFogGuardPlus_CNN(weights = weights,classes=classes,input_shape = input_shape,dropout = dropout, alpha = alpha,survive_rates=nodewise_survival_rate)
-            modelCheckPoint = ModelCheckpoint(model_name, monitor='val_acc', verbose=checkpoint_verbose, save_best_only=True, save_weights_only=True, mode='auto', period=1)
-            model.fit_generator(train_datagen.flow(x_train,y_train,batch_size = batch_size),
+            # # node-wise dropout
+            # deepFogGuardPlus_nodewise_dropout_file = "cifar_nodewise_dropout_" + str(nodewise_survival_rate) + "_" + str(iteration) + ".h5"
+            # deepFogGuardPlus_nodewise_dropout = define_deepFogGuardPlus_CNN(weights = weights,classes=classes,input_shape = input_shape,dropout = dropout, alpha = alpha,survive_rates=nodewise_survival_rate)
+            # deepFogGuardPlus_nodewise_dropout_Checkpoint = ModelCheckpoint(deepFogGuardPlus_nodewise_dropout_file, monitor='val_acc', verbose=checkpoint_verbose, save_best_only=True, save_weights_only=True, mode='auto', period=1)
+            # deepFogGuardPlus_nodewise_dropout.fit_generator(train_datagen.flow(x_train,y_train,batch_size = batch_size),
+            # epochs = epochs,
+            # validation_data = (x_val,y_val), 
+            # steps_per_epoch = train_steps_per_epoch, 
+            # verbose = progress_verbose, 
+            # validation_steps = val_steps_per_epoch,
+            # callbacks = [deepFogGuardPlus_nodewise_dropout_Checkpoint])
+            # # load weights with the highest validaton acc
+            # deepFogGuardPlus_nodewise_dropout.load_weights(deepFogGuardPlus_nodewise_dropout_file)
+
+            # adjusted node-wise dropout
+            deepFogGuardPlus_adjusted_nodewise_dropout_file = "cifar_adjusted_nodewise_dropout_" + str(nodewise_survival_rate) + "_" + str(iteration) + ".h5"
+            deepFogGuardPlus_adjusted_nodewise_dropout = define_adjusted_deepFogGuardPlus_CNN(weights = weights,classes=classes,input_shape = input_shape,dropout = dropout, alpha = alpha,survive_rates=nodewise_survival_rate)
+            deepFogGuardPlus_adjusted_nodewise_dropout_Checkpoint = ModelCheckpoint(deepFogGuardPlus_adjusted_nodewise_dropout_file, monitor='val_acc', verbose=checkpoint_verbose, save_best_only=True, save_weights_only=True, mode='auto', period=1)
+            deepFogGuardPlus_adjusted_nodewise_dropout.fit_generator(train_datagen.flow(x_train,y_train,batch_size = batch_size),
             epochs = epochs,
             validation_data = (x_val,y_val), 
             steps_per_epoch = train_steps_per_epoch, 
             verbose = progress_verbose, 
             validation_steps = val_steps_per_epoch,
-            callbacks = [modelCheckPoint])
-            # load weights with the highest validaton acc
-            model.load_weights(model_name)
+            callbacks = [deepFogGuardPlus_adjusted_nodewise_dropout_Checkpoint])
+            
+            #load weights with the highest validaton acc
+            #deepFogGuardPlus_nodewise_dropout.load_weights(deepFogGuardPlus_nodewise_dropout_file)
+            deepFogGuardPlus_adjusted_nodewise_dropout.load_weights(deepFogGuardPlus_adjusted_nodewise_dropout_file)
             for survivability_setting in survivability_settings:
                 output_list.append(str(survivability_setting) + '\n')
                 print(survivability_setting)
-                output["deepFogGuardPlus Node-wise Dropout"][str(nodewise_survival_rate)][str(survivability_setting)][iteration-1] = calculateExpectedAccuracy(model, survivability_setting,output_list, y_train, x_test, y_test)
+                #output["deepFogGuardPlus Node-wise Dropout"][str(nodewise_survival_rate)][str(survivability_setting)][iteration-1] = calculateExpectedAccuracy(deepFogGuardPlus_nodewise_dropout, survivability_setting,output_list, y_train, x_test, y_test)
+                output["deepFogGuardPlus Adjusted Node-wise Dropout"][str(nodewise_survival_rate)][str(survivability_setting)][iteration-1] = calculateExpectedAccuracy(deepFogGuardPlus_adjusted_nodewise_dropout, survivability_setting,output_list, y_train, x_test, y_test)
             # clear session so that model will recycled back into memory
             K.clear_session()
             gc.collect()
-            del model
+            #del deepFogGuardPlus_nodewise_dropout
+            del deepFogGuardPlus_adjusted_nodewise_dropout
     with open(file_name,'a+') as file:
         for survivability_setting in survivability_settings:
             for nodewise_survival_rate in nodewise_survival_rates:
                 output_list.append(str(survivability_setting) + '\n')
-                deepGuardPlus_acc = average(output["deepFogGuardPlus Node-wise Dropout"][str(nodewise_survival_rate)][str(survivability_setting)])
-                output_list.append(str(survivability_setting) + str(nodewise_survival_rate) + " nodewise_survival_rate Accuracy: " + str(deepGuardPlus_acc) + '\n')
-                print(str(survivability_setting), str(nodewise_survival_rate), " nodewise_survival_rate Accuracy:",deepGuardPlus_acc)
+                # deepGuardPlus_acc = average(output["deepFogGuardPlus Node-wise Dropout"][str(nodewise_survival_rate)][str(survivability_setting)])
+                # output_list.append(str(survivability_setting) + str(nodewise_survival_rate) + " nodewise_survival_rate Accuracy: " + str(deepGuardPlus_acc) + '\n')
+                # print(str(survivability_setting), str(nodewise_survival_rate), " nodewise_survival_rate Accuracy:",deepGuardPlus_acc)
+
+                adjusted_deepGuardPlus_acc = average(output["deepFogGuardPlus Adjusted Node-wise Dropout"][str(nodewise_survival_rate)][str(survivability_setting)])
+                output_list.append(str(survivability_setting) + str(nodewise_survival_rate) + " adjusted nodewise_survival_rate Accuracy: " + str(adjusted_deepGuardPlus_acc) + '\n')
+                print(str(survivability_setting), str(nodewise_survival_rate), " adjusted nodewise_survival_rate Accuracy:",adjusted_deepGuardPlus_acc)
         file.writelines(output_list)
         file.flush()
         os.fsync(file)
