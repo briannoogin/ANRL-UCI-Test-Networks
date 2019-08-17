@@ -32,10 +32,14 @@ if __name__ == "__main__":
     one_weight_scheme = 1
     normalized_survivability_weight_scheme = 2
     survivability_weight_scheme = 3
+    random_weight_scheme = 4
+    random_weight_scheme2 = 5
     weight_schemes = [
         one_weight_scheme,
         normalized_survivability_weight_scheme,
-        survivability_weight_scheme
+        survivability_weight_scheme,
+        random_weight_scheme,
+        random_weight_scheme2
     ]
     hidden_units = 250
     batch_size = 1028
@@ -59,21 +63,35 @@ if __name__ == "__main__":
     output = {
         "DeepFogGuard Hyperconnection Weight": 
         {
-            weight_schemes[0]:
+            one_weight_scheme:
             {
                 no_failure: [0] * num_iterations,
                 hazardous:[0] * num_iterations,
                 poor:[0] * num_iterations,
                 normal:[0] * num_iterations,
             },
-            weight_schemes[1]:
+            normalized_survivability_weight_scheme:
             {
                 no_failure: [0] * num_iterations,
                 hazardous:[0] * num_iterations,
                 poor:[0] * num_iterations,
                 normal:[0] * num_iterations,
             },
-            weight_schemes[2]:
+            survivability_weight_scheme:
+            {
+                no_failure: [0] * num_iterations,
+                hazardous:[0] * num_iterations,
+                poor:[0] * num_iterations,
+                normal:[0] * num_iterations,
+            },
+            random_weight_scheme:
+            {
+                no_failure: [0] * num_iterations,
+                hazardous:[0] * num_iterations,
+                poor:[0] * num_iterations,
+                normal:[0] * num_iterations,
+            },
+            random_weight_scheme2:
             {
                 no_failure: [0] * num_iterations,
                 hazardous:[0] * num_iterations,
@@ -94,7 +112,7 @@ if __name__ == "__main__":
             for weight_scheme in weight_schemes:
                 # deepFogGuard hyperconnection weight 
                 deepFogGuard_hyperconnection_weight = define_deepFogGuard(num_vars,num_classes,hidden_units,survivability_setting, weight_config = weight_scheme)
-                deepFogGuard_hyperconnection_weight_file = str(iteration) + "_" + str(survivability_setting) + "_" + str(weight_scheme) + '_health_hyperconnection_weight.h5'
+                deepFogGuard_hyperconnection_weight_file = str(iteration) + "_" + str(survivability_setting) + "_" + str(weight_scheme) + 'health_hyperconnection_weight.h5'
                 if load_model:
                     deepFogGuard_hyperconnection_weight.load_weights(deepFogGuard_hyperconnection_weight_file)
                 else:
@@ -103,7 +121,7 @@ if __name__ == "__main__":
                     deepFogGuard_hyperconnection_weight.fit(training_data,training_labels,epochs=num_train_epochs, batch_size=batch_size,verbose=verbose,shuffle = True, callbacks = [deepFogGuard_hyperconnection_weight_CheckPoint],validation_data=(val_data,val_labels))
                     # load weights from epoch with the highest val acc
                     deepFogGuard_hyperconnection_weight.load_weights(deepFogGuard_hyperconnection_weight_file)
-
+                output["DeepFogGuard Hyperconnection Weight"][weight_scheme][str(survivability_setting)][iteration-1] = calculateExpectedAccuracy(deepFogGuard_hyperconnection_weight,survivability_setting,output_list,training_labels,test_data,test_labels)
                 # clear session so that model will recycled back into memory
                 K.clear_session()
                 gc.collect()
