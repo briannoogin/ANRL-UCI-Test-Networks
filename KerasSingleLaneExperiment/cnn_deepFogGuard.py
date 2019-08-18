@@ -12,7 +12,7 @@ from keras_applications.imagenet_utils import _obtain_input_shape, get_submodule
 from keras_applications import imagenet_utils
 import keras 
 from KerasSingleLaneExperiment.cnn_utils import _conv_block,_depthwise_conv_block
-
+import random 
 BASE_WEIGHT_PATH = ('https://github.com/fchollet/deep-learning-models/'
                     'releases/download/v0.6/')
 
@@ -159,15 +159,25 @@ def define_deepFogGuard_CNN(input_shape=None,
         connection_weight_ec = 1
         connection_weight_fc = 1
     elif hyperconnection_weights_scheme == 2:
-        connection_weight_IoTf = 1 
-        connection_weight_ef = hyperconnection_weights[0]
-        connection_weight_ec = hyperconnection_weights[0]
-        connection_weight_fc = hyperconnection_weights[1] 
-    elif hyperconnection_weights_scheme == 3:
         connection_weight_IoTf = 1 / (1 + hyperconnection_weights[0])
         connection_weight_ef = hyperconnection_weights[0] / (1 + hyperconnection_weights[0])
         connection_weight_ec = hyperconnection_weights[0] / (hyperconnection_weights[1] + hyperconnection_weights[0])
         connection_weight_fc = hyperconnection_weights[1] / (hyperconnection_weights[1] + hyperconnection_weights[0])
+    elif hyperconnection_weights_scheme == 3:
+        connection_weight_IoTf = 1 
+        connection_weight_ef = hyperconnection_weights[0]
+        connection_weight_ec = hyperconnection_weights[0]
+        connection_weight_fc = hyperconnection_weights[1] 
+    elif hyperconnection_weights_scheme == 4:
+        connection_weight_IoTf = random.uniform(0,1)
+        connection_weight_ef = random.uniform(0,1)
+        connection_weight_ec = random.uniform(0,1)
+        connection_weight_fc = random.uniform(0,1)
+    elif hyperconnection_weights_scheme == 5:
+        connection_weight_IoTf = random.uniform(0,10)
+        connection_weight_ef = random.uniform(0,10)
+        connection_weight_ec = random.uniform(0,10)
+        connection_weight_fc = random.uniform(0,10)
     else:
         raise ValueError("Incorrect scheme value")
 

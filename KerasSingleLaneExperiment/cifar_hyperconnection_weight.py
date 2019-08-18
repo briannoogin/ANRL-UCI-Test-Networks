@@ -46,10 +46,14 @@ if __name__ == "__main__":
     one_weight_scheme = 1
     normalized_survivability_weight_scheme = 2
     survivability_weight_scheme = 3
+    random_weight_scheme = 4
+    random_weight_scheme2 = 5
     weight_schemes = [
         one_weight_scheme,
         normalized_survivability_weight_scheme,
-        survivability_weight_scheme
+        survivability_weight_scheme,
+        random_weight_scheme,
+        random_weight_scheme2
     ]
     # convert survivability settings into strings so it can be used in the dictionary as keys
     no_failure = str(survivability_settings[0])
@@ -72,21 +76,35 @@ if __name__ == "__main__":
     output = {
         "DeepFogGuard Hyperconnection Weight": 
         {
-            weight_schemes[0]:
+           one_weight_scheme:
             {
                 no_failure: [0] * num_iterations,
                 hazardous:[0] * num_iterations,
                 poor:[0] * num_iterations,
                 normal:[0] * num_iterations,
             },
-            weight_schemes[1]:
+            normalized_survivability_weight_scheme:
             {
                 no_failure: [0] * num_iterations,
                 hazardous:[0] * num_iterations,
                 poor:[0] * num_iterations,
                 normal:[0] * num_iterations,
             },
-            weight_schemes[2]:
+            survivability_weight_scheme:
+            {
+                no_failure: [0] * num_iterations,
+                hazardous:[0] * num_iterations,
+                poor:[0] * num_iterations,
+                normal:[0] * num_iterations,
+            },
+            random_weight_scheme:
+            {
+                no_failure: [0] * num_iterations,
+                hazardous:[0] * num_iterations,
+                poor:[0] * num_iterations,
+                normal:[0] * num_iterations,
+            },
+            random_weight_scheme2:
             {
                 no_failure: [0] * num_iterations,
                 hazardous:[0] * num_iterations,
@@ -122,7 +140,7 @@ if __name__ == "__main__":
                 model.load_weights(model_name)
                 output_list.append(str(survivability_setting) + str(weight_scheme) + '\n')
                 print(survivability_setting,weight_scheme)
-                output["DeepFogGuard Hyperconnection Weight"][weight_scheme][str(survivability_setting)][iteration-1] = calculateExpectedAccuracy(model, survivability_setting,output_list, y_train, x_test, y_test)
+                output["DeepFogGuard Hyperconnection Weight"][weight_scheme][str(survivability_setting)][iteration-1] = calculateExpectedAccuracy(model,survivability_setting,output_list, y_train, x_test, y_test)
                 # clear session so that model will recycled back into memory
                 K.clear_session()
                 gc.collect()
