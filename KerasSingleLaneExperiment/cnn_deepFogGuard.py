@@ -178,6 +178,11 @@ def define_deepFogGuard_CNN(input_shape=None,
         connection_weight_ef = random.uniform(0,10)
         connection_weight_ec = random.uniform(0,10)
         connection_weight_fc = random.uniform(0,10)
+    elif hyperconnection_weights_scheme == 6:
+        connection_weight_IoTf = .5
+        connection_weight_ef = .5
+        connection_weight_ec = .5
+        connection_weight_fc = .5
     else:
         raise ValueError("Incorrect scheme value")
 

@@ -48,12 +48,14 @@ if __name__ == "__main__":
     survivability_weight_scheme = 3
     random_weight_scheme = 4
     random_weight_scheme2 = 5
+    fifty_weight_scheme = 6
     weight_schemes = [
         one_weight_scheme,
         normalized_survivability_weight_scheme,
         survivability_weight_scheme,
         random_weight_scheme,
-        random_weight_scheme2
+        random_weight_scheme2,
+        fifty_weight_scheme,
     ]
     # convert survivability settings into strings so it can be used in the dictionary as keys
     no_failure = str(survivability_settings[0])
@@ -105,6 +107,13 @@ if __name__ == "__main__":
                 normal:[0] * num_iterations,
             },
             random_weight_scheme2:
+            {
+                no_failure: [0] * num_iterations,
+                hazardous:[0] * num_iterations,
+                poor:[0] * num_iterations,
+                normal:[0] * num_iterations,
+            },
+            fifty_weight_scheme:
             {
                 no_failure: [0] * num_iterations,
                 hazardous:[0] * num_iterations,
