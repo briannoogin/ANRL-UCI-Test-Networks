@@ -44,16 +44,16 @@ def define_deepFogGuard(num_vars,num_classes,hidden_units,survive_rates, skip_hy
         connection_weight_f2c = survive_rates[1] 
         connection_weight_f1c = survive_rates[2]
     elif weight_config == 4:
-        random.seed(42)
+        #random.seed(42)
         # weights are randomly weighted from 0-1
-        connection_weight_IoTf2  = random.random()
-        connection_weight_ef2 = random.random()
-        connection_weight_ef1 = random.random()
-        connection_weight_f2f1 = random.random()
-        connection_weight_f2c = random.random()
-        connection_weight_f1c = random.random()
+        connection_weight_IoTf2  = random.uniform(0,1)
+        connection_weight_ef2 = random.uniform(0,1)
+        connection_weight_ef1 = random.uniform(0,1)
+        connection_weight_f2f1 = random.uniform(0,1)
+        connection_weight_f2c = random.uniform(0,1)
+        connection_weight_f1c = random.uniform(0,1)
     elif weight_config == 5:
-        random.seed(42)
+        #random.seed(42)
         # weights are randomly weighted from 0-10
         connection_weight_IoTf2  = random.uniform(0,10)
         connection_weight_ef2 = random.uniform(0,10)
@@ -61,6 +61,14 @@ def define_deepFogGuard(num_vars,num_classes,hidden_units,survive_rates, skip_hy
         connection_weight_f2f1 = random.uniform(0,10)
         connection_weight_f2c = random.uniform(0,10)
         connection_weight_f1c = random.uniform(0,10)
+    elif weight_config == 6:
+        # weights are weighted .5
+        connection_weight_IoTf2  = .5
+        connection_weight_ef2 = .5
+        connection_weight_ef1 = .5
+        connection_weight_f2f1 = .5
+        connection_weight_f2c = .5
+        connection_weight_f1c = .5
     else:
         raise ValueError("Invalid weight config value")
 
