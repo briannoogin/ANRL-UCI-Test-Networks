@@ -52,10 +52,8 @@ if __name__ == "__main__":
     progress_verbose = 2
     checkpoint_verbose = 1
     use_GCP = True
-    dropout = 0
     alpha = .5
     input_shape = (32,32,3)
-    weights = None
     classes = 10
     train_steps_per_epoch = math.ceil(len(x_train) / batch_size)
     val_steps_per_epoch = math.ceil(len(x_val) / batch_size)
@@ -88,7 +86,7 @@ if __name__ == "__main__":
         for survivability_setting in survivability_settings:
             # # node-wise dropout
             deepFogGuardPlus_variable_nodewise_dropout_file = "cifar_nodewise_variable_dropout_" + str(iteration) + ".h5"
-            deepFogGuardPlus_variable_nodewise_dropout = define_deepFogGuardPlus_CNN(weights = weights,classes=classes,input_shape = input_shape,dropout = dropout, alpha = alpha,survive_rates=survivability_setting)
+            deepFogGuardPlus_variable_nodewise_dropout = define_deepFogGuardPlus_CNN(classes=classes,input_shape = input_shape,alpha = alpha,survivability_setting=survivability_setting)
             deepFogGuardPlus_variable_nodewise_dropout_Checkpoint = ModelCheckpoint(deepFogGuardPlus_variable_nodewise_dropout_file, monitor='val_acc', verbose=checkpoint_verbose, save_best_only=True, save_weights_only=True, mode='auto', period=1)
             deepFogGuardPlus_variable_nodewise_dropout.fit_generator(train_datagen.flow(x_train,y_train,batch_size = batch_size),
             epochs = epochs,

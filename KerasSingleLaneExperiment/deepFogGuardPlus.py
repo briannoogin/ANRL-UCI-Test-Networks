@@ -6,7 +6,7 @@ from keras.models import Model
 from keras.backend import constant
 import random 
 
-def define_deepFogGuardPlus(num_vars,num_classes,hidden_units,survive_rates,skip_hyperconnections = [1,1,1]):
+def define_deepFogGuardPlus(num_vars,num_classes,hidden_units,survive_rates,skip_hyperconnections = [1,1,1], dropout_config = 1):
     """Define a deepFogGuardPlus model.
     ### Naming Convention
         ex: f2f1 = connection between fog node 2 and fog node 1
@@ -174,7 +174,6 @@ def define_adjusted_deepFogGuardPlus(num_vars,num_classes,hidden_units,survive_r
     f1_survive_rate = K.variable(survive_rates[2])
 
     # set training phase to true to enable dropout
-    #K.set_learning_phase(1)
     if K.eval(K.learning_phase()):
         # seeds so the random_number is different for each fog node 
         e_rand = K.random_uniform(shape=e_rand.shape,seed=7)

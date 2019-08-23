@@ -34,19 +34,21 @@ if __name__ == "__main__":
     survivability_weight_scheme = 3
     random_weight_scheme = 4
     random_weight_scheme2 = 5
+    fifty_weight_scheme = 6
     weight_schemes = [
-        one_weight_scheme,
-        normalized_survivability_weight_scheme,
-        survivability_weight_scheme,
+        # one_weight_scheme,
+        # normalized_survivability_weight_scheme,
+        # survivability_weight_scheme,
         random_weight_scheme,
-        random_weight_scheme2
+        random_weight_scheme2,
+        # fifty_weight_scheme,
     ]
     hidden_units = 250
     batch_size = 1028
     load_model = False
     num_train_epochs = 25 
     # file name with the experiments accuracy output
-    output_name = "results/health_hyperconnection_weight.txt"
+    output_name = "results/health_hyperconnection_fixed_random_weight.txt"
     num_iterations = 10
     verbose = 2
     hyperconnection_weightedbysurvivability_config = 2
@@ -97,6 +99,13 @@ if __name__ == "__main__":
                 hazardous:[0] * num_iterations,
                 poor:[0] * num_iterations,
                 normal:[0] * num_iterations,
+            },
+            fifty_weight_scheme:
+            {
+                no_failure: [0] * num_iterations,
+                hazardous:[0] * num_iterations,
+                poor:[0] * num_iterations,
+                normal:[0] * num_iterations,
             }
         },
     }
@@ -112,7 +121,7 @@ if __name__ == "__main__":
             for weight_scheme in weight_schemes:
                 # deepFogGuard hyperconnection weight 
                 deepFogGuard_hyperconnection_weight = define_deepFogGuard(num_vars,num_classes,hidden_units,survivability_setting, weight_config = weight_scheme)
-                deepFogGuard_hyperconnection_weight_file = str(iteration) + "_" + str(survivability_setting) + "_" + str(weight_scheme) + 'health_hyperconnection_weight.h5'
+                deepFogGuard_hyperconnection_weight_file = str(iteration) + "_" + str(survivability_setting) + "_" + str(weight_scheme) + 'health_hyperconnection_fixed_random_weight.h5'
                 if load_model:
                     deepFogGuard_hyperconnection_weight.load_weights(deepFogGuard_hyperconnection_weight_file)
                 else:

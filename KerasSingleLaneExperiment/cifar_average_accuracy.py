@@ -57,7 +57,6 @@ if __name__ == "__main__":
     dropout = 0
     alpha = .5
     input_shape = (32,32,3)
-    weights = None
     classes = 10
     default_nodewise_survival_rate = [.95,.95,.95]
     train_steps_per_epoch = math.ceil(len(x_train) / batch_size)
@@ -102,9 +101,9 @@ if __name__ == "__main__":
         deepFogGuard_name = "deepFogGuard_cifar_average_accuracy" + str(iteration) + ".h5"
         deepFogGuardPlus_name = "deepFogGuardPlus_cifar_average_accuracy" + str(iteration) + ".h5"
 
-        vanilla = define_Vanilla_CNN(weights = weights,classes=classes,input_shape = input_shape,dropout = dropout, alpha = alpha)
-        deepFogGuard = define_deepFogGuard_CNN(weights = weights,classes=classes,input_shape = input_shape,dropout= dropout, alpha = alpha)
-        deepFogGuardPlus = define_deepFogGuardPlus_CNN(weights = weights,classes=classes,input_shape = input_shape,dropout = dropout, alpha = alpha,survive_rates=default_nodewise_survival_rate)
+        vanilla = define_Vanilla_CNN(classes=classes,input_shape = input_shape,alpha = alpha)
+        deepFogGuard = define_deepFogGuard_CNN(classes=classes,input_shape = input_shape,alpha = alpha)
+        deepFogGuardPlus = define_deepFogGuardPlus_CNN(classes=classes,input_shape = input_shape,alpha = alpha,survivability_setting=default_nodewise_survival_rate)
 
         # checkpoints to keep track of model with best validation accuracy 
         vanillaCheckPoint = ModelCheckpoint(vanilla_name, monitor='val_acc', verbose=checkpoint_verbose, save_best_only=True, save_weights_only=True, mode='auto', period=1)
@@ -176,4 +175,3 @@ if __name__ == "__main__":
     if use_GCP:
         os.system('gsutil -m -q cp -r *.h5 gs://anrl-storage/models')
         os.system('gsutil -m -q cp -r {} gs://anrl-storage/results/'.format(file_name))
-
