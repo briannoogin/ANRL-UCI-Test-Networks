@@ -6,7 +6,7 @@ from keras.callbacks import ModelCheckpoint
 import keras.backend as K
 import math
 import os 
-from KerasSingleLaneExperiment.cnn_deepFogGuardPlus import define_deepFogGuardPlus_CNN, define_adjusted_deepFogGuardPlus_CNN
+from KerasSingleLaneExperiment.cnn_deepFogGuardPlus import define_deepFogGuardPlus_CNN
 from KerasSingleLaneExperiment.FailureIteration import calculateExpectedAccuracy
 import numpy as np
 from KerasSingleLaneExperiment.main import average
@@ -64,13 +64,7 @@ if __name__ == "__main__":
             hazardous:[0] * num_iterations,
             poor :[0] * num_iterations,
             normal:[0] * num_iterations,
-        },
-        "deepFogGuardPlus Node-wise 10x Variable Dropout": 
-        {
-            hazardous:[0] * num_iterations,
-            poor :[0] * num_iterations,
-            normal:[0] * num_iterations,
-        },
+        }
     }
   
     now = datetime.datetime.now()
