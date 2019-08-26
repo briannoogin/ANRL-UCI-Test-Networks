@@ -10,8 +10,7 @@ import keras
 import keras.layers as layers
 from KerasSingleLaneExperiment.cnn_utils import _conv_block,_depthwise_conv_block
 from KerasSingleLaneExperiment.cnn import define_cnn_architecture_IoT,define_cnn_architecture_cloud,define_cnn_architecture_edge,define_cnn_architecture_fog
-BASE_WEIGHT_PATH = ('https://github.com/fchollet/deep-learning-models/'
-                    'releases/download/v0.6/')
+
 def define_Vanilla_CNN(input_shape=None,
               alpha=1.0,
               depth_multiplier=1,
@@ -74,9 +73,9 @@ def define_Vanilla_CNN(input_shape=None,
     img_input = layers.Input(shape=input_shape)  
     # changed the strides from 2 to 1 since cifar-10 images are smaller
     # IoT Node
-    iot = define_cnn_architecture_IoT(img_input,alpha)
+    iot = define_cnn_architecture_IoT(img_input,alpha,strides = (1,1))
     # edge 
-    edge = define_cnn_architecture_edge(iot,alpha,depth_multiplier)
+    edge = define_cnn_architecture_edge(iot,alpha,depth_multiplier,strides = (1,1))
     # fog node
     fog = define_cnn_architecture_fog(edge,alpha,depth_multiplier)
     # layer alias to name cloud input (alias is used for random guessing)
